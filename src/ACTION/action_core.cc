@@ -175,9 +175,8 @@ namespace ACTION {
 		 
 		init_omp(numThreads);
 
-		#ifdef DEBUG
-			printf("Iterating from k=%d ... %d\n", k_min, k_max);
-		#endif
+		printf("Iterating from k=%d ... %d\n", k_min, k_max);
+		
 		field<mat> AA_res(2,1);
 		for(int kk = k_min; kk <= k_max; kk++) {
 			printf("\tK = %d\n", kk);

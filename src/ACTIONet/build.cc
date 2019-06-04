@@ -267,7 +267,7 @@ namespace ACTIONetcore {
 			rowvec v_dist = dist.row(v); // Shall we use lambda instead?			
 			//vec v_dist = lambda(neighbor_no) - beta(span(0, neighbor_no), v);
 			//v_dist /= max(v_dist);
-			for (int i = 1; i <= neighbor_no; i++) {				
+			for (int i = 1; i <= v_idx.n_elem-1; i++) {				
 				int src = v_idx(i)-1;
 				int dst = v;
 				if(src > D.n_rows-1 || src < 0) {
