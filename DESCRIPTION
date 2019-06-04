@@ -1,0 +1,14 @@
+Package: ACTIONet
+Type: Package
+Title: ACTIONet single-cell analysis package
+Version: 1.0
+Date: 2019-01-01
+Author: Shahin Mohammadi
+Maintainer: Shahin Mohammadi <mohammadi@broadinstitute.org>
+Description: 
+License: GPL (>= 2)
+Imports: Rcpp (>= 0.12.1)
+Depends: Matrix,scran,igraph
+LinkingTo: Rcpp,RcppArmadillo
+Encoding: UTF-8
+LazyData: true
