@@ -21,3 +21,71 @@ runACTION <- function(S_r, k_min = 2L, k_max = 20L, thread_no = 4L) {
     .Call(`_ACTIONet_runACTION`, S_r, k_min, k_max, thread_no)
 }
 
+computeFullDist <- function(H_stacked, thread_no = 4L, verbose = 1L) {
+    .Call(`_ACTIONet_computeFullDist`, H_stacked, thread_no, verbose)
+}
+
+computeNearestDist <- function(H_stacked, kNN, thread_no = 4L) {
+    .Call(`_ACTIONet_computeNearestDist`, H_stacked, kNN, thread_no)
+}
+
+smoothKNN <- function(D, thread_no = 4L) {
+    .Call(`_ACTIONet_smoothKNN`, D, thread_no)
+}
+
+computeNearestDist_edgeList <- function(H_stacked, kNN, thread_no = 4L) {
+    .Call(`_ACTIONet_computeNearestDist_edgeList`, H_stacked, kNN, thread_no)
+}
+
+buildACTIONet <- function(H_stacked, kNN = 30L, thread_no = 8L) {
+    .Call(`_ACTIONet_buildACTIONet`, H_stacked, kNN, thread_no)
+}
+
+buildAdaptiveACTIONet <- function(H_stacked, LC = 1.0, thread_no = 8L) {
+    .Call(`_ACTIONet_buildAdaptiveACTIONet`, H_stacked, LC, thread_no)
+}
+
+layoutACTIONet <- function(G, S_r, compactness_level = 1.0, n_epochs = 500L, thread_no = 8L) {
+    .Call(`_ACTIONet_layoutACTIONet`, G, S_r, compactness_level, n_epochs, thread_no)
+}
+
+reconstructArchetypes <- function(S, C_trace, H_trace, z_threshold = 1.0) {
+    .Call(`_ACTIONet_reconstructArchetypes`, S, C_trace, H_trace, z_threshold)
+}
+
+extractArchetypeAssociatedSamples <- function(G, H_stacked, alpha = 0.85) {
+    .Call(`_ACTIONet_extractArchetypeAssociatedSamples`, G, H_stacked, alpha)
+}
+
+assessFeatureSets <- function(S, index_sets, rand_perm = 100L) {
+    .Call(`_ACTIONet_assessFeatureSets`, S, index_sets, rand_perm)
+}
+
+assessFeatureSets_archs <- function(archetype_profile, index_sets, rand_perm = 100L) {
+    .Call(`_ACTIONet_assessFeatureSets_archs`, archetype_profile, index_sets, rand_perm)
+}
+
+assessFeatureSets_decoupled <- function(archetype_profile, H_stacked, index_sets, rand_perm = 100L) {
+    .Call(`_ACTIONet_assessFeatureSets_decoupled`, archetype_profile, H_stacked, index_sets, rand_perm)
+}
+
+computeAutocorrelation <- function(G, scores, rand_perm = 100L, num_shuffles = 10000L) {
+    .Call(`_ACTIONet_computeAutocorrelation`, G, scores, rand_perm, num_shuffles)
+}
+
+phenotypeEnrichment <- function(H_stacked, phenotype_associations, rand_perm_no) {
+    .Call(`_ACTIONet_phenotypeEnrichment`, H_stacked, phenotype_associations, rand_perm_no)
+}
+
+MWM <- function(G) {
+    .Call(`_ACTIONet_MWM`, G)
+}
+
+batchPR <- function(G, U, alpha = 0.85, thread_no = 8L, tol = 1e-6) {
+    .Call(`_ACTIONet_batchPR`, G, U, alpha, thread_no, tol)
+}
+
+sweepcut <- function(A, s) {
+    .Call(`_ACTIONet_sweepcut`, A, s)
+}
+

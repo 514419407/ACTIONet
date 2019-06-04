@@ -8,7 +8,7 @@ Maintainer: Shahin Mohammadi <mohammadi@broadinstitute.org>
 Description: 
 License: GPL (>= 2)
 Imports: Rcpp (>= 0.12.1)
-Depends: Matrix,scran,igraph
+Depends: Matrix,SingleCellExperiment,scran,scater,igraph,ggpubr,ggplot2,ggrepel,plotly,threejs,viridis,scales
 LinkingTo: Rcpp,RcppArmadillo
 Encoding: UTF-8
 LazyData: true

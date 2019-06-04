@@ -31,7 +31,6 @@ reduce.sce <- function(sce, reduced_dim = 50, max.iter = 5, normalize = TRUE) {
 
 
 reduce.and.batch.correct.sce <- function(sce, batch.attr=NA, reduced_dim = 50, k=20) {
-	require(irlba)
 	require(scran)
 	require(scater)
 	require(ACTIONet)
@@ -161,22 +160,12 @@ run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8,
 	arch.coordinates_3D = t(reconstruct.out$C_stacked) %*% vis.out$coordinates_3D
 	arch.vis.out = list(colors = arch.colors, coordinates = arch.coordinates, coordinates_3D = arch.coordinates_3D)
 
-
-	# Assign names to archetypes
-	levels = computeArchLevel(2, max_k = 30, reconstruct.out$selected_archs)
-	idx = split(1:length(levels), levels)
-	arch_names = as.character(unlist(sapply(names(idx), function(L) { sapply(1:length(idx[[L]]), function(i) { sprintf('Arch%s_L%s_%s', idx[[L]][[i]], L, i)}) })))
-
-	colnames(reconstruct.out$archetype_profile) = arch_names
-
 	ACTIONet.out = list(ACTION.out = ACTION.out, reconstruct.out = reconstruct.out, build.out = build.out, vis.out = vis.out, ACTIONet = ACTIONet, arch.vis.out = arch.vis.out)
 
 	# Add signature profile
 	signature.profile = construct.signature.profile(sce = sce, ACTIONet.out = ACTIONet.out) 
-	colnames(signature.profile) = arch_names
 	ACTIONet.out$signature.profile = signature.profile
-	
-	
+		
 	core.out = identify.core.archetypes(ACTIONet.out, 1)
 	H.core = runsimplexRegression(t(sce@reducedDims[["S_r"]]) %*% ACTIONet.out$reconstruct.out$C_stacked[, core.out$core.archs], t(sce@reducedDims[["S_r"]]))
 	core.out$H = H.core	

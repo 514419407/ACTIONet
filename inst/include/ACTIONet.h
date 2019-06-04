@@ -23,6 +23,7 @@
 #include <ctime>
 
 #include "ACTION/ACTION.h"
+#include "ACTIONet/actionetcore.h"
 
 #define ARMA_DONT_USE_WRAPPER
 #undef ARMA_BLAS_CAPITALS

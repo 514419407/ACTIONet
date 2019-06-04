@@ -55,55 +55,9 @@ import.sce.from.10X <- function(input_path, mtx_file = 'matrix.mtx.gz', gene_ann
 	return(sce)
 }
 
-# Uses loomR: https://satijalab.org/loomR/loomR_tutorial.html
-import.sce.from.loom <- function(input_file, prefilter = FALSE, min.cells.per.gene = 10, min.genes.per.cell = 300) {
-	require(loomR)
-	require(scran)
-	
-	lfile <- loomR::connect(filename = input_file, mode = "r+")
-
-	counts <- lfile$get.sparse(dataset = 'matrix')
-
-	gene_annotations <- lfile$get.attribute.df(MARGIN = 1)
-
-	meta.data <- setdiff(names(x = lfile[['col_attrs']]), c("ClusterID", "ClusterName", "Clusterings"))
-	sample_annotations <- lfile$get.attribute.df(MARGIN = 2, attributes = meta.data)
-
-	rownames(counts) = rownames(gene_annotations)
-	colnames(counts) = colnames(sample_annotations)
-		
-	meta.df <- data.frame('NA' = rep.int(x = NA, times = lfile$shape[2]))
-	rownames(x = meta.df) <- colnames(x = counts)
-	for (i in meta.data) {
-		X = lfile[[sprintf("col_attrs/%s", i)]][]
-		if(is.data.frame(X))
-			next
-		meta.df[, i] <- X
-	}
-	meta.df <- meta.df[, -1]
-
-	sce <- SingleCellExperiment(
-	  assays = list(counts = counts), 
-	  colData = meta.df
-	) 		
-	
-	if(prefilter) {
-		cell.counts = Matrix::rowSums(sce@assays[["counts"]] > 0)
-		sce = sce[cell.counts > min.cells.per.gene, ]
-		
-		feature.counts = Matrix::colSums(sce@assays[["counts"]] > 0)
-		sce = sce[, feature.counts > min.genes.per.cell]
-	}	
-	
-	lfile$close_all()
-
-	return(sce)
-}
-
-
 # https://satijalab.org/seurat/v3.0/conversion_vignette.html
 import.sce.from.Seurat <- function(Seurat.obj) {
-	require(Seurat)
+	library(Seurat)
 	
 	sce <- as.SingleCellExperiment(Seurat.obj)
 	
@@ -163,7 +117,7 @@ split.CITESeq.sce <- function(sce) {
 }
 
 rename.sce.rows <- function(sce, from = "ENSEMBL", to = "SYMBOL") {
-require(org.Hs.eg.db)
+library(org.Hs.eg.db)
 
 suppressWarnings(ids <- mapIds(org.Hs.eg.db,
 	 keys=row.names(sce),
