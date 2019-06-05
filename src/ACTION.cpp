@@ -94,3 +94,18 @@ List runACTION(mat S_r, int k_min = 2, int k_max=20, int thread_no = 4) {
 		
 	return res;
 }
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+List frSVD(sp_mat &A, int dim, int iters = 5, int seed = 0) {	
+
+	field<mat> SVD_out = ACTION::frSVD(A, dim, iters, seed);
+	
+	List res;
+	res["U"] = SVD_out(0);	
+	res["sigma"] = SVD_out(1);	
+	res["V"] = SVD_out(2);	
+		
+	return res;
+}

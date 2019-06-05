@@ -3,34 +3,24 @@
 
 
 namespace ACTION {
-	Projection reducedKernel(sp_mat &profile, int PCA_dim, bool ortho, int iter, int seed);
-
 	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim = DEFAULT_PCA_DIM, int method = ACTIONplusPCA, int iter = 10) {
 		printf("Reducing expression matrix\n");
 		Projection projection;
 		
 		switch(method) {
-			case PCA_only:
-				{
-					printf("\tReduce expression matrix using PCA only (k = %d) ... \n", reduced_dim); fflush(stdout);
-					Projection PCA_results = reducedKernel(expression, reduced_dim, false, iter, 1365);		
-					printf("done\n"); fflush(stdout);
-				}
-				break;
-				
 			case ACTIONplusPCA:	// Uses dense formulation
-				{
-					printf("\tReduce expression matrix using orthogonalization followed by PCA (k = %d) using sparse formulation ... \n", reduced_dim); fflush(stdout);
-					Projection PCA_results = reducedKernel(expression, reduced_dim, true, iter, 1365);		
-					printf("done\n"); fflush(stdout);
-				}
-				break;
-
+			{
+				printf("\tReduce expression matrix using orthogonalization followed by PCA (k = %d) using sparse formulation ... \n", reduced_dim); fflush(stdout);
+				projection = reducedKernel(expression, reduced_dim, iter, 1365);		
+				printf("done\n"); fflush(stdout);
+				
+			}
+			break;
 				
 			default:
 				fprintf(stderr, "Unknown RNA reduction method code %d\n", method);
 		}
-		
+
 		return projection;
 	}
 	

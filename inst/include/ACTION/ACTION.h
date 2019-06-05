@@ -62,6 +62,10 @@ namespace ACTION {
 	field<mat> AA (mat X, mat Z0); // Robust archetypal analysis method
 	ACTION_results runACTION(mat S_r, int k_min, int k_max, int numThreads); // Main ACTION function	
 	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim, int method, int iter);	
+
+	Projection reducedKernel(sp_mat &profile, int PCA_dim, int iter, int seed);
+	field<mat> frSVD(sp_mat &A, int dim, int iters, int seed);
+	
 }
 
 #endif

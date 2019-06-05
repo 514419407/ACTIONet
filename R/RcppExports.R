@@ -21,6 +21,10 @@ runACTION <- function(S_r, k_min = 2L, k_max = 20L, thread_no = 4L) {
     .Call(`_ACTIONet_runACTION`, S_r, k_min, k_max, thread_no)
 }
 
+frSVD <- function(A, dim, iters = 5L, seed = 0L) {
+    .Call(`_ACTIONet_frSVD`, A, dim, iters, seed)
+}
+
 computeFullDist <- function(H_stacked, thread_no = 4L, verbose = 1L) {
     .Call(`_ACTIONet_computeFullDist`, H_stacked, thread_no, verbose)
 }

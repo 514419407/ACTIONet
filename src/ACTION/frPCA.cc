@@ -1,10 +1,24 @@
 #include "ACTION.h"
 
 namespace ACTION {
+	mat randNorm(int l, int m, int seed) {
+		std::default_random_engine gen (seed);	
+		std::normal_distribution<double> unif(0.0, 1.0);
+			
+		mat R(l, m);
+		for (register int j = 0; j < m; j++) {
+			for(register int i = 0; i < l; i++) {
+				R(i, j) = unif(gen);
+			}
+		}
+		return R;
+	}
+	
+	
 	field<mat> eigSVD(mat A) {
 		int n = A.n_cols;
 		mat B = trans(A)*A;
-		
+				
 		vec d;
 		mat V;
 		eig_sym( d, V, B );		
@@ -21,6 +35,8 @@ namespace ACTION {
 		out(0) = U;
 		out(1) = d;
 		out(2) = V;
+		
+		return(out);
 	}
 
 
@@ -49,40 +65,36 @@ namespace ACTION {
 */
 
 	// From: Xu Feng, Yuyang Xie, and Yaohang Li, "Fast Randomzied PCA for Sparse Data," in Proc. the 10th Asian Conference on Machine Learning (ACML), Beijing, China, Nov. 2018.
-	field<mat> frPCA(sp_mat &A, int dim, int q, int seed = 0) {	
+	field<mat> frSVD(sp_mat &A, int dim, int iters, int seed = 0) {	
 		int s = 5;
-		arma_rng::set_seed(seed);
 
 		int m = A.n_rows;
 		int n = A.n_cols;
-		printf("\t\tRunning randomized PCA. Matrix size: %d x %d (# passes = %d)\n", m, n, q); fflush(stdout);
+		
+		printf("\t\tRunning randomized PCA. Matrix size: %d x %d (# iters = %d)\n", m, n, iters); fflush(stdout);
 				
 		vec S;
 		mat Q, L, U, V;
 		field<mat> SVD_out;
 		
 		if(m < n) {
-			if ( (q %2 ) == 0 ) {
-				printf("Initializing PCA ... ");
-				Q = randn(n, dim+s);
-				Q = A*Q;
-				if (q == 2) {
-					SVD_out = eigSVD(Q);
-					Q = SVD_out(0);					
-				}
-				else {
-					lu(L, U, Q);
-					Q = L;
-				}
-				printf("done\n");
+			printf("\t\t\tInitializing PCA (mode 1) ... ");
+			Q = randNorm(n, dim+s, seed);
+			Q = A*Q;
+			if (iters == 0) {
+				SVD_out = eigSVD(Q);
+				Q = SVD_out(0);					
 			}
 			else {
-				Q = randn(m, dim+s);
+				lu(L, U, Q);
+				Q = L;
 			}
+			printf("done\n");
 			
-			int upper = floor((q-1)/2);
-			for (int i = 1; i <= upper; i++) {
-				if (i == upper) {
+			for (int i = 1; i <= iters; i++) {
+				printf("\t\t\t\tIter %d/%d done\n", i, iters);				
+				
+				if (i == iters) {
 					SVD_out = eigSVD(A*(trans(A)*Q));
 					Q = SVD_out(0);									
 				}
@@ -90,40 +102,35 @@ namespace ACTION {
 					lu(L, U, A*(trans(A)*Q));
 					Q = L;
 				}
-				printf("Pass %d/%d done\n", i, upper);				
 			}
 			
 			SVD_out = eigSVD(trans(A)*Q);
 			U = SVD_out(0);
 			S = SVD_out(1);
-			V = SVD_out(1);
+			V = SVD_out(2);
 			
 			U = Q*U.cols(s, dim+s-1);
 			V = V.cols(s, dim+s-1);
 			S = S(span(s, dim+s-1));
 		}
 		else {
-			if ( (q %2 ) == 0 ) {
-				printf("Initializing PCA ... ");				
-				Q = randn(m, dim+s);
-				Q = trans(A)*Q;
-				if (q == 2) {
-					SVD_out = eigSVD(Q);
-					Q = SVD_out(0);					
-				}
-				else {
-					lu(L, U, Q);
-					Q = L;
-				}
-				printf("done\n");
+			printf("\t\t\tInitializing PCA (mode 2) ... ");				
+			Q = randNorm(m, dim+s, seed);
+			Q = trans(A)*Q;
+			if (iters == 0) {
+				SVD_out = eigSVD(Q);
+				Q = SVD_out(0);					
 			}
 			else {
-				Q = randn(m, dim+s);
+				lu(L, U, Q);
+				Q = L;
 			}
+			printf("done\n");
 			
-			int upper = floor((q-1)/2);
-			for (int i = 1; i <= upper; i++) {
-				if (i == upper) {
+			for (int i = 1; i <= iters; i++) {
+				printf("\t\t\t\tIter %d/%d done\n", i, iters);				
+				
+				if (i == iters) {
 					SVD_out = eigSVD(trans(A)*(A*Q));
 					Q = SVD_out(0);									
 				}
@@ -131,37 +138,28 @@ namespace ACTION {
 					lu(L, U, trans(A)*(A*Q));
 					Q = L;
 				}
-				printf("Pass %d/%d done\n", i, upper);
 			}
 			
 			SVD_out = eigSVD(A*Q);
 			U = SVD_out(0);
 			S = SVD_out(1);
-			V = SVD_out(1);
+			V = SVD_out(2);
+						
 			
 			U = U.cols(s, dim+s-1);
 			V = Q*V.cols(s, dim+s-1);
 			S = S(span(s, dim+s-1));
 		}		
 		
-	
-		vec sigma_sq = square(S);
-		vec lambda = sigma_sq / (m-1);
-		vec explained_var = cumsum(sigma_sq) / sum(sigma_sq);
-
-		mat scores(n, dim);
-		scores = U;
-		for (int i = 0; i < dim; i++) {
-			scores.col(i) = S(i)*scores.col(i);
-		}
+		uvec perm = sort_index(S, "descend");
 		
-		field<mat> results(4);
-		results(0) = scores.t();;
-		results(1) = V;
-		results(2) = lambda;
-		results(3) = explained_var;
+		field<mat> out(3);
 		
-		return results;	
+		out(0) = U.cols(perm);
+		out(1) = S(perm);
+		out(2) = V.cols(perm);
+		
+		return(out);
 	}
 
 	void gram_schmidt(mat& A) {
@@ -183,40 +181,41 @@ namespace ACTION {
 		}
 	}
 
-	Projection reducedKernel(sp_mat &profile, int PCA_dim, bool ortho = true, int iter = 3, int seed = 1365) {			
+	Projection reducedKernel(sp_mat &profile, int PCA_dim, int iter = 3, int seed = 0) {			
 		int n = profile.n_rows;
 		//profile = normalise(profile, 2);    
+
+		Projection projection;		
 
 		printf("\tRunning ACTION+PCA. Matrix size: %d x %d\n", profile.n_rows, profile.n_cols); fflush(stdout);
 
 		mat A, B;
-		if(ortho) {
-			// Update 1: Orthogonalize columns w.r.t. background (mean)
-			vec mu = vec(mean(profile, 1));
-			vec v = mu / norm(mu, 2);
-			vec a1 = v;
-			vec b1 = -trans(profile)*v;
-			
-			// Update 2: Center columns of orthogonalized matrix before performing SVD (i.e., PCA)
-			vec c = vec(trans(mean(profile, 0)));
-			double a1_mean = mean(a1);
-			vec a2 = ones(profile.n_rows);
-			vec b2 = -(a1_mean*b1 + c);
+		
+		// Update 1: Orthogonalize columns w.r.t. background (mean)
+		vec mu = vec(mean(profile, 1));
+		vec v = mu / norm(mu, 2);
+		vec a1 = v;
+		vec b1 = -trans(profile)*v;
+		
+		// Update 2: Center columns of orthogonalized matrix before performing SVD (i.e., PCA)
+		vec c = vec(trans(mean(profile, 0)));
+		double a1_mean = mean(a1);
+		vec a2 = ones(profile.n_rows);
+		vec b2 = -(a1_mean*b1 + c);
 
-			A = join_rows(a1, a2);
-			B = join_rows(b1, b2);
-		} else {
-			A = ones(profile.n_rows);
-			B = -vec(trans(mean(profile, 0)));
-		}
+		A = join_rows(a1, a2);
+		B = join_rows(b1, b2);
+
 		
 		printf("\tPerform SVD on the original matrix\n"); fflush(stdout);
-		field<mat> SVD_results = frPCA(profile, PCA_dim, 2*iter+1, seed);	
+		field<mat> SVD_results = frSVD(profile, PCA_dim, iter, seed);	
 
 		mat U = SVD_results(0);
-		mat V = SVD_results(2);
 		vec s = SVD_results(1);
+		mat V = SVD_results(2);
+		
 
+//		printf("U: %d x %d, V = %d x %d, s = %d\n", U.n_rows, U.n_cols, V.n_rows, V.n_cols, s.n_elem);
 		printf("\tUpdate SVD ..."); fflush(stdout);
 		vec s_prime;
 		mat U_prime, V_prime;
@@ -234,7 +233,7 @@ namespace ACTION {
 		gram_schmidt(Q);
 		mat R_Q = Q.t()*B_ortho_proj;	
 		
-		mat K1 = zeros(s.n_elem+2, s.n_elem+2);
+		mat K1 = zeros(s.n_elem+A.n_cols, s.n_elem+A.n_cols);
 		for(int i = 0; i < s.n_elem; i++) {
 			K1(i, i) = s(i);
 		}
@@ -251,7 +250,6 @@ namespace ACTION {
 		printf("done.\n"); fflush(stdout);
 		
 		
-		Projection projection;		
 		projection.S_r = trans(V_updated.cols(0, PCA_dim-1));
 		for(int i = 0; i < PCA_dim; i++) {
 			projection.S_r.row(i) *= s_prime(i);

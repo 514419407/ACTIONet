@@ -71,6 +71,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// frSVD
+List frSVD(sp_mat& A, int dim, int iters, int seed);
+RcppExport SEXP _ACTIONet_frSVD(SEXP ASEXP, SEXP dimSEXP, SEXP itersSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< sp_mat& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< int >::type dim(dimSEXP);
+    Rcpp::traits::input_parameter< int >::type iters(itersSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(frSVD(A, dim, iters, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 // computeFullDist
 mat computeFullDist(mat& H_stacked, int thread_no, int verbose);
 RcppExport SEXP _ACTIONet_computeFullDist(SEXP H_stackedSEXP, SEXP thread_noSEXP, SEXP verboseSEXP) {
@@ -315,6 +329,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_runSPA", (DL_FUNC) &_ACTIONet_runSPA, 2},
     {"_ACTIONet_runAA", (DL_FUNC) &_ACTIONet_runAA, 2},
     {"_ACTIONet_runACTION", (DL_FUNC) &_ACTIONet_runACTION, 4},
+    {"_ACTIONet_frSVD", (DL_FUNC) &_ACTIONet_frSVD, 4},
     {"_ACTIONet_computeFullDist", (DL_FUNC) &_ACTIONet_computeFullDist, 3},
     {"_ACTIONet_computeNearestDist", (DL_FUNC) &_ACTIONet_computeNearestDist, 3},
     {"_ACTIONet_smoothKNN", (DL_FUNC) &_ACTIONet_smoothKNN, 2},
