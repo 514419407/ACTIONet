@@ -1,3 +1,128 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:585109442d3cadda90571e57b0d4f6a4bc72e3fb584e73ae2cf82f393fa47a5c
-size 7673
+Sample_title	Sample_geo_accession	Celltype	Gender	Sample_description
+DZQV_CD8_naive_rep4	GSM2859411	Naive CD8 T cells	M	DZQV_CD8_naive
+DZQV_CD8_CM_rep4	GSM2859412	Central memory CD8 T cell	M	DZQV_CD8_CM
+DZQV_CD8_EM_rep4	GSM2859413	Effector memory CD8 T cells	M	DZQV_CD8_EM
+DZQV_CD8_TE_rep4	GSM2859414	Terminal effector CD8 T cells	M	DZQV_CD8_TE
+DZQV_MAIT_rep4	GSM2859415	MAIT cells	M	DZQV_MAIT
+DZQV_VD2+_rep4	GSM2859416	Vd2 gd T cells	M	DZQV_VD2+
+DZQV_VD2-_rep4	GSM2859417	Non-Vd2 gd T cells	M	DZQV_VD2-
+DZQV_TFH_rep4	GSM2859418	Follicular helper T cells	M	DZQV_TFH
+DZQV_Treg_rep4	GSM2859419	T regulatory cells	M	DZQV_Treg
+DZQV_Th1_rep4	GSM2859420	Th1 cells	M	DZQV_Th1
+DZQV_Th1/Th17_rep4	GSM2859421	Th1/Th17 cells	M	DZQV_Th1/Th17
+DZQV_Th17_rep4	GSM2859422	Th17 cells	M	DZQV_Th17
+DZQV_Th2_rep4	GSM2859423	Th2 cells	M	DZQV_Th2
+DZQV_CD4_naive_rep4	GSM2859424	Naive CD4 T cells	M	DZQV_CD4_naive
+DZQV_Progenitor_rep4	GSM2859425	Progenitor cells	M	DZQV_Progenitor
+DZQV_B_naive_rep4	GSM2859426	Naive B cells	M	DZQV_B_naive
+DZQV_B_NSM_rep4	GSM2859427	Non-switched memory B cells	M	DZQV_B_NSM
+DZQV_B_Ex_rep4	GSM2859428	Exhausted B cells	M	DZQV_B_Ex
+DZQV_B_SM_rep4	GSM2859429	Switched memory B cells	M	DZQV_B_SM
+DZQV_Plasmablasts_rep4	GSM2859430	Plasmablasts	M	DZQV_Plasmablasts
+DZQV_C_mono_rep4	GSM2859431	Classical monocytes	M	DZQV_C_mono
+DZQV_I_mono_rep4	GSM2859432	Intermediate monocytes	M	DZQV_I_mono
+DZQV_NC_mono_rep4	GSM2859433	Non-classical monocytes	M	DZQV_NC_mono
+DZQV_NK_rep4	GSM2859434	Natural killer cells	M	DZQV_NK
+DZQV_pDC_rep4	GSM2859435	Plasmacytoid dendritic cells	M	DZQV_pDC
+DZQV_mDC_rep4	GSM2859436	Myeloid dendritic cells	M	DZQV_mDC
+DZQV_Neutrophils_rep4	GSM2859437	Low-density neutrophils	M	DZQV_Neutrophils
+DZQV_Basophils_rep4	GSM2859438	Low-density basophils	M	DZQV_Basophils
+925L_CD8_naive_rep2	GSM2859439	Naive CD8 T cells	M	925L_CD8_naive
+925L_CD8_CM_rep2	GSM2859440	Central memory CD8 T cell	M	925L_CD8_CM
+925L_CD8_EM_rep2	GSM2859441	Effector memory CD8 T cells	M	925L_CD8_EM
+925L_CD8_TE_rep2	GSM2859442	Terminal effector CD8 T cells	M	925L_CD8_TE
+925L_MAIT_rep2	GSM2859443	MAIT cells	M	925L_MAIT
+925L_VD2+_rep2	GSM2859444	Vd2 gd T cells	M	925L_VD2+
+925L_VD2-_rep2	GSM2859445	Non-Vd2 gd T cells	M	925L_VD2-
+925L_TFH_rep2	GSM2859446	Follicular helper T cells	M	925L_TFH
+925L_Treg_rep2	GSM2859447	T regulatory cells	M	925L_Treg
+925L_Th1_rep2	GSM2859448	Th1 cells	M	925L_Th1
+925L_Th1/Th17_rep2	GSM2859449	Th1/Th17 cells	M	925L_Th1/Th17
+925L_Th17_rep2	GSM2859450	Th17 cells	M	925L_Th17
+925L_Th2_rep2	GSM2859451	Th2 cells	M	925L_Th2
+925L_CD4_naive_rep2	GSM2859452	Naive CD4 T cells	M	925L_CD4_naive
+925L_CD4_TE_rep2	GSM2859453	Terminal effector CD4 T cells	M	925L_CD4_TE
+925L_Progenitor_rep2	GSM2859454	Progenitor cells	M	925L_Progenitor
+925L_B_naive_rep2	GSM2859455	Naive B cells	M	925L_B_naive
+925L_B_NSM_rep2	GSM2859456	Non-switched memory B cells	M	925L_B_NSM
+925L_B_Ex_rep2	GSM2859457	Exhausted B cells	M	925L_B_Ex
+925L_B_SM_rep2	GSM2859458	Switched memory B cells	M	925L_B_SM
+925L_Plasmablasts_rep2	GSM2859459	Plasmablasts	M	925L_Plasmablasts
+925L_C_mono_rep2	GSM2859460	Classical monocytes	M	925L_C_mono
+925L_I_mono_rep2	GSM2859461	Intermediate monocytes	M	925L_I_mono
+925L_NC_mono_rep2	GSM2859462	Non-classical monocytes	M	925L_NC_mono
+925L_NK_rep2	GSM2859463	Natural killer cells	M	925L_NK
+925L_pDC_rep2	GSM2859464	Plasmacytoid dendritic cells	M	925L_pDC
+925L_mDC_rep2	GSM2859465	Myeloid dendritic cells	M	925L_mDC
+925L_Neutrophils_rep2	GSM2859466	Low-density neutrophils	M	925L_Neutrophils
+925L_Basophils_rep2	GSM2859467	Low-density basophils	M	925L_Basophils
+9JD4_CD8_naive_rep1	GSM2859468	Naive CD8 T cells	F	9JD4_CD8_naive
+9JD4_CD8_CM_rep1	GSM2859469	Central memory CD8 T cell	F	9JD4_CD8_CM
+9JD4_CD8_EM_rep1	GSM2859470	Effector memory CD8 T cells	F	9JD4_CD8_EM
+9JD4_CD8_TE_rep1	GSM2859471	Terminal effector CD8 T cells	F	9JD4_CD8_TE
+9JD4_MAIT_rep1	GSM2859472	MAIT cells	F	9JD4_MAIT
+9JD4_VD2+_rep1	GSM2859473	Vd2 gd T cells	F	9JD4_VD2+
+9JD4_VD2-_rep1	GSM2859474	Non-Vd2 gd T cells	F	9JD4_VD2-
+9JD4_TFH_rep1	GSM2859475	Follicular helper T cells	F	9JD4_TFH
+9JD4_Treg_rep1	GSM2859476	T regulatory cells	F	9JD4_Treg
+9JD4_Th1_rep1	GSM2859477	Th1 cells	F	9JD4_Th1
+9JD4_Th1/Th17_rep1	GSM2859478	Th1/Th17 cells	F	9JD4_Th1/Th17
+9JD4_Th17_rep1	GSM2859479	Th17 cells	F	9JD4_Th17
+9JD4_Th2_rep1	GSM2859480	Th2 cells	F	9JD4_Th2
+9JD4_CD4_naive_rep1	GSM2859481	Naive CD4 T cells	F	9JD4_CD4_naive
+9JD4_CD4_TE_rep1	GSM2859482	Terminal effector CD4 T cells	F	9JD4_CD4_TE
+9JD4_Progenitor_rep1	GSM2859483	Progenitor cells	F	9JD4_Progenitor
+9JD4_B_naive_rep1	GSM2859484	Naive B cells	F	9JD4_B_naive
+9JD4_B_NSM_rep1	GSM2859485	Non-switched memory B cells	F	9JD4_B_NSM
+9JD4_B_Ex_rep1	GSM2859486	Exhausted B cells	F	9JD4_B_Ex
+9JD4_B_SM_rep1	GSM2859487	Switched memory B cells	F	9JD4_B_SM
+9JD4_Plasmablasts_rep1	GSM2859488	Plasmablasts	F	9JD4_Plasmablasts
+9JD4_C_mono_rep1	GSM2859489	Classical monocytes	F	9JD4_C_mono
+9JD4_I_mono_rep1	GSM2859490	Intermediate monocytes	F	9JD4_I_mono
+9JD4_NC_mono_rep1	GSM2859491	Non-classical monocytes	F	9JD4_NC_mono
+9JD4_NK_rep1	GSM2859492	Natural killer cells	F	9JD4_NK
+9JD4_pDC_rep1	GSM2859493	Plasmacytoid dendritic cells	F	9JD4_pDC
+9JD4_mDC_rep1	GSM2859494	Myeloid dendritic cells	F	9JD4_mDC
+9JD4_Neutrophils_rep1	GSM2859495	Low-density neutrophils	F	9JD4_Neutrophils
+9JD4_Basophils_rep1	GSM2859496	Low-density basophils	F	9JD4_Basophils
+G4YW_CD8_naive_rep3	GSM2859497	Naive CD8 T cells	F	G4YW_CD8_naive
+G4YW_CD8_CM_rep3	GSM2859498	Central memory CD8 T cell	F	G4YW_CD8_CM
+G4YW_CD8_EM_rep3	GSM2859499	Effector memory CD8 T cells	F	G4YW_CD8_EM
+CYFZ_PBMC_rep9	GSM2859500	PBMCs	M	CYFZ_PBMC
+FY2H_PBMC_rep8	GSM2859501	PBMCs	M	FY2H_PBMC
+FLWA_PBMC_rep10	GSM2859502	PBMCs	M	FLWA_PBMC
+453W_PBMC_rep5	GSM2859503	PBMCs	M	453W_PBMC
+684C_PBMC_rep6	GSM2859504	PBMCs	F	684C_PBMC
+CZJE_PBMC_rep7	GSM2859505	PBMCs	M	CZJE_PBMC
+G4YW_CD8_TE_rep3	GSM2859506	Terminal effector CD8 T cells	F	G4YW_CD8_TE
+G4YW_MAIT_rep3	GSM2859507	MAIT cells	F	G4YW_MAIT
+G4YW_VD2+_rep3	GSM2859508	Vd2 gd T cells	F	G4YW_VD2+
+G4YW_VD2-_rep3	GSM2859509	Non-Vd2 gd T cells	F	G4YW_VD2-
+G4YW_TFH_rep3	GSM2859510	Follicular helper T cells	F	G4YW_TFH
+G4YW_Treg_rep3	GSM2859511	T regulatory cells	F	G4YW_Treg
+G4YW_Th1_rep3	GSM2859512	Th1 cells	F	G4YW_Th1
+G4YW_Th1/Th17_rep3	GSM2859513	Th1/Th17 cells	F	G4YW_Th1/Th17
+G4YW_Th17_rep3	GSM2859514	Th17 cells	F	G4YW_Th17
+G4YW_Th2_rep3	GSM2859515	Th2 cells	F	G4YW_Th2
+G4YW_CD4_naive_rep3	GSM2859516	Naive CD4 T cells	F	G4YW_CD4_naive
+G4YW_Progenitor_rep3	GSM2859517	Progenitor cells	F	G4YW_Progenitor
+G4YW_B_naive_rep3	GSM2859518	Naive B cells	F	G4YW_B_naive
+G4YW_B_NSM_rep3	GSM2859519	Non-switched memory B cells	F	G4YW_B_NSM
+G4YW_B_Ex_rep3	GSM2859520	Exhausted B cells	F	G4YW_B_Ex
+G4YW_B_SM_rep3	GSM2859521	Switched memory B cells	F	G4YW_B_SM
+G4YW_Plasmablasts_rep3	GSM2859522	Plasmablasts	F	G4YW_Plasmablasts
+G4YW_C_mono_rep3	GSM2859523	Classical monocytes	F	G4YW_C_mono
+G4YW_I_mono_rep3	GSM2859524	Intermediate monocytes	F	G4YW_I_mono
+G4YW_NC_mono_rep3	GSM2859525	Non-classical monocytes	F	G4YW_NC_mono
+G4YW_NK_rep3	GSM2859526	Natural killer cells	F	G4YW_NK
+G4YW_pDC_rep3	GSM2859527	Plasmacytoid dendritic cells	F	G4YW_pDC
+G4YW_mDC_rep3	GSM2859528	Myeloid dendritic cells	F	G4YW_mDC
+G4YW_Neutrophils_rep3	GSM2859529	Low-density neutrophils	F	G4YW_Neutrophils
+G4YW_Basophils_rep3	GSM2859530	Low-density basophils	F	G4YW_Basophils
+DZQV_PBMC_rep4	GSM2859531	PBMCs	M	DZQV_PBMC
+925L_PBMC_rep2	GSM2859532	PBMCs	M	925L_PBMC
+9JD4_PBMC_rep1	GSM2859533	PBMCs	F	9JD4_PBMC
+G4YW_PBMC_rep3	GSM2859534	PBMCs	F	G4YW_PBMC
+4DUY_PBMC_rep11	GSM2859535	PBMCs	M	4DUY_PBMC
+36TS_PBMC_rep12	GSM2859536	PBMCs	M	36TS_PBMC
+CR3L_PBMC_rep13	GSM2859537	PBMCs	F	CR3L_PBMC

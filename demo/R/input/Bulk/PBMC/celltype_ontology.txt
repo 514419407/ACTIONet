@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b49eb5dd3a4c04dba2f3099a378622fa812833805670d75fb3c7c4dda5af1830
-size 3375
+Full name cell types	Classification_1	Classification_2	classification_3	classification_4	classification_5	classification_6	classification_7	classification_8	classification_9	Classification_10
+Progenitor cells	Progenitors	Progenitors	Progenitors	Progenitors	Progenitors	Progenitors	Progenitors	Progenitors	Progenitors	HSC
+Naive B cells	B Naive	B Naive+NSM	B Naive	B Naive+Memory	B cells	B cells	APC	Lymphoid	Adaptive	B
+Non-switched memory B cells	B NSM	B Naive+NSM	B Memory	B Naive+Memory	B cells	B cells	APC	Lymphoid	Adaptive	B
+Exhausted B cells	B SM	B Ex+SM	B Memory	B Naive+Memory	B cells	B cells	APC	Lymphoid	Adaptive	B
+Switched memory B cells	B Ex	B Ex+SM	B Memory	B Naive+Memory	B cells	B cells	APC	Lymphoid	Adaptive	B
+Plasmablasts	Plasmablasts	Plasmablasts	Plasmablasts	Plasmablasts	B cells	B cells	APC	Lymphoid	Adaptive	Plasma
+Naive CD4 T cells	T CD4 Naive	T CD4 Naive+Tregs	T CD4 Naive+Tregs	T CD4 Naive	T CD4	T Naive	T cells	Lymphoid	Adaptive	CD4+ T
+Follicular helper T cells	Tregs	T CD4 Naive+Tregs	T CD4 Naive+Tregs	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+T regulatory cells	Tfh	Tfh+Th1-17	Tfh+Th	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+Th1 cells	Th1	Tfh+Th1-17	Tfh+Th	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+Th1/Th17 cells	Th1/Th17	Tfh+Th1-17	Tfh+Th	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+Th17 cells	Th17	Tfh+Th1-17	Tfh+Th	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+Th2 cells	Th2	Th	Tfh+Th	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+Terminal effector CD4 T cells	T CD4 TE	T CD4 TE	T CD4 TE	T CD4 Memory	T CD4	T Memory	T cells	Lymphoid	Adaptive	CD4+ T
+Naive CD8 T cells	T CD8 Naive	T CD8 Naive	T CD8 Naive	T CD8 Naive	T CD8	T Naive	T cells	Lymphoid	Adaptive	CD8+ T
+Central memory CD8 T cell	T CD8 CM	T CD8 CM	T CD8 Memory	T CD8 Memory	T CD8	T Memory	T cells	Lymphoid	Adaptive	CD8+ T
+Effector memory CD8 T cells	T CD8 EM	T CD8 EM+TE	T CD8 Memory	T CD8 Memory	T CD8	T Memory	T cells	Lymphoid	Adaptive	CD8+ T
+Terminal effector CD8 T cells	T CD8 TE	T CD8 EM+TE	T CD8 Memory	T CD8 Memory	T CD8	T Memory	T cells	Lymphoid	Adaptive	CD8+ T
+Vd2 gd T cells	T gd Vd2	T gd	T gd	T gd	T Innate	T Innate	T cells	Lymphoid	Innate	GD T
+Non-Vd2 gd T cells	T gd non-Vd2	T gd	T gd	T gd	T Innate	T Innate	T cells	Lymphoid	Innate	GD T
+MAIT cells	MAIT	MAIT	MAIT	MAIT	T Innate	T Innate	T cells	Lymphoid	Innate	GD T
+Natural killer cells	NK	NK	NK	NK	NK	NK	NK	Lymphoid	Innate	NK
+Plasmacytoid dendritic cells	pDCs	pDCs	DCs	DCs	pDCs	Phagocytes	APC	Lymphoid	Innate	pDC
+Myeloid dendritic cells	mDCs	mDCs	DCs	DCs	Myeloid Phagocytes	Phagocytes	APC	Myeloid	Innate	cDC
+Classical monocytes	Monocytes C	Monocytes C	Monocytes C+I	Monocytes	Myeloid Phagocytes	Phagocytes	APC	Myeloid	Innate	CD14+ Mono
+Intermediate monocytes	Monocytes I	Monocytes NC+I	Monocytes C+I	Monocytes	Myeloid Phagocytes	Phagocytes	APC	Myeloid	Innate	CD16+ Mono
+Non-classical monocytes	Monocytes NC	Monocytes NC+I	Monocytes NC	Monocytes	Myeloid Phagocytes	Phagocytes	APC	Myeloid	Innate	CD16+ Mono
+Low-density neutrophils	Neutrophils LD	Granulocytes LD	Granulocytes LD	Granulocytes LD	Granulocytes LD	Phagocytes	Granulocytes LD	Myeloid	Innate	Granulocytes
+Low-density basophils	Basophils LD	Granulocytes LD	Granulocytes LD	Granulocytes LD	Granulocytes LD	Basophils LD	Granulocytes LD	Myeloid	Innate	Granulocytes

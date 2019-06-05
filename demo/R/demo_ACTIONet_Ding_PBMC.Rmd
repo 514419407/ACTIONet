@@ -1,3 +1,271 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1e8f850088cea6f25e2536d09a647a9b4446d71b2f8ae1c10deb054a93b7e73c
-size 6732
+---
+title: "ACTIONet demo -- PBMC experiment"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+require(ACTIONet)
+
+dataset_folder = 'input/datasets/Ding2019/'
+results_folder = 'results/Ding2019'
+if(!file.exists(results_folder)) {
+  dir.create(results_folder, recursive = TRUE)
+}
+depth = 20
+thread_no = 8
+kernel_reduced_dim = 30
+
+
+```
+
+
+
+# Reading count matrix in SingleCellExperiment format and running ACTIONet
+```{r}
+fname = paste(results_folder, 'HumanPBMC_ACTIONet_out.RDS', sep='/')
+
+if(!file.exists(fname)) {
+  sce = readRDS(paste(dataset_folder, 'HumanPBMC.RDS', sep = '/'))
+  sce = reduce.sce(sce, reduced_dim = kernel_reduced_dim)
+  
+  saveRDS(sce, file = paste(results_folder, 'HumanPBMC_reduced_sce.RDS', sep='/'))
+
+  ACTIONet.out = run.ACTIONet(sce, k_max = 20, thread_no = thread_no)
+  
+  saveRDS(ACTIONet.out, file = fname)
+  
+} else {
+  sce = readRDS(file = paste(results_folder, 'HumanPBMC_reduced_sce.RDS', sep='/'))
+  ACTIONet.out =readRDS(fname)
+}
+
+Labels = factor(sce$CellType, levels = sort(unique(sce$CellType)))
+
+
+```
+
+
+
+## Automated cell type annotations (+/- markers, PR)
+```{r}
+load('input/datasets/Ding2019/markers/human_pbmc_marker.rda')
+
+
+require(ACTIONet)
+
+automated.cell.annotations = annotate.cells.using.markers(ACTIONet.out, sce, marker, alpha_val = 0.5)
+
+inferred.Labels = automated.cell.annotations$Labels
+inferred.Labels.conf = automated.cell.annotations$Labels.confidence
+
+table(inferred.Labels)
+
+```
+
+
+##  Visualizing ACTIONet with known/inferred labels
+```{r}
+
+# Known cell types
+plot.ACTIONet.igraph(ACTIONet.out, Labels)
+
+# Infered cell types
+plot.ACTIONet.igraph(ACTIONet.out, inferred.Labels)
+
+# Infered cell types with confidence scores
+plot.ACTIONet.igraph(ACTIONet.out, inferred.Labels, transparency.attr = inferred.Labels.conf)
+
+## Gradient of CD4 T-cells
+Z = automated.cell.annotations$cell2celltype.mat
+CD4.assignment.vec = Z[, "CD4+ T cell"]
+plot.ACTIONet.gradient(ACTIONet.out, CD4.assignment.vec, title = 'CD4 T-cell')
+
+
+```
+
+## Imputing individual markers and projecting them on the ACTIONet to verify annotations/labels
+```{r}
+selected.markers = read.table('input/PBMC_selected_markers.txt', header = TRUE, sep = '\t', as.is = TRUE)
+
+visualize.markers(ACTIONet.out, sce, selected.markers$Symbol, CPal = "inferno")
+
+```
+## Plot coupled cell, cell state, and gene views
+```{r}
+  plot.ACTIONet.igraph(ACTIONet.out)
+
+  plot.ACTIONet.3D(ACTIONet.out, sce$Labels)
+  
+  plot.ACTIONet.gene.view(ACTIONet.out, top.gene.count = 3)
+
+  plot.ACTIONet.cell.states(ACTIONet.out, cex = 2)
+  
+```
+
+
+
+## Analyzing archetypes as representative cell states
+
+### Assessing phenoptypic (i.e., cell type annotation) enrichment of archetypes
+```{r}
+
+arch.annotations = annotate.archetype(ACTIONet.out, Labels, 1000)
+
+arch.Labels = arch.annotations$archetypeLabels
+
+ComplexHeatmap::Heatmap(arch.annotations$Enrichment[ACTIONet.out$core.out$core.archs, ])
+
+```
+
+### Correlation of archetypes with bulk RNA-Seq
+```{r}
+orthoProject <- function(A, S) {
+  A = scale(A)
+  S = scale(S)
+  A_r = A - S %*% MASS::ginv(t(S) %*% S) %*% (t(S)%*%A)
+  A_r = scale(A_r)
+  return(A_r)
+}
+
+
+bulk.sample.annotations = read.csv('input/Bulk/PBMC/sample_annotations.txt', sep = '\t', as.is = TRUE)
+TPM = read.csv('input/Bulk/PBMC/GSE107011_Processed_data_TPM.txt', sep = '\t', as.is = TRUE)
+
+bulk.expression = as.matrix(TPM[, -1])
+cs = colSums(bulk.expression)
+bulk.expression = log(1+median(cs)*scale(bulk.expression, center = FALSE, scale = cs))
+
+Ensembl_ID = sapply(TPM[, 1], function(x) strsplit(x, ".", fixed = TRUE)[[1]][[1]])
+
+require(org.Hs.eg.db)
+suppressWarnings(ids <- mapIds(org.Hs.eg.db,
+	 keys=Ensembl_ID,
+	 column="SYMBOL",
+	 keytype="ENSEMBL",
+	 multiVals="first"))
+	 
+ids[is.na(ids)] = ''
+
+common.genes = intersect(ids, rownames(sce))
+
+
+idx = match(common.genes, rownames(sce))
+X = ACTIONet.out$reconstruct.out$archetype_profile[idx, ACTIONet.out$core.out$core.archs]
+X.orth = orthoProject(X, Matrix::rowMeans(X))
+colnames(X.orth) = arch.Labels[ACTIONet.out$core.out$core.archs]
+  
+idx = match(common.genes, ids)
+Y = bulk.expression[idx, ]
+
+Y = sapply(unique(bulk.sample.annotations$Celltype), function(celltype) {
+  cols = which(bulk.sample.annotations$Celltype == celltype)
+  if(length(cols) == 0) {
+    return(Y[, cols])
+  } else {
+    return(Matrix::rowMeans(Y[, cols]))
+  }
+})
+Y = Y[, -which(colnames(Y) == "PBMCs")]
+
+Y.orth = orthoProject(Y, Matrix::rowMeans(Y))
+
+CC = cor(Y.orth, X.orth)
+
+
+
+require(ComplexHeatmap)
+Pal = ggpubr::get_palette("d3", length(levels(Labels)))
+names(Pal) = levels(Labels)
+
+ha_column = HeatmapAnnotation(df = data.frame(celltype = colnames(CC)), col = list(celltype = Pal), width = unit(0.5, "cm"), annotation_legend_param = list(celltype=list(title_gp = gpar(fontsize = 8), labels_gp = gpar(fontsize = 5))))
+
+
+ht_list = ComplexHeatmap::Heatmap(CC, row_names_gp = gpar(fontsize =8), column_names_gp = gpar(fontsize = 0), top_annotation = ha_column, name = 'Correlation')
+
+
+draw(ht_list, heatmap_legend_side = "right", annotation_legend_side = "left")
+
+```
+
+
+### Inferring cell level annotations from archetype annotations inferring labels
+```{r}
+cell.cor = CC %*% ACTIONet.out$core.out$H
+detailed.Labels = rownames(CC)[apply(cell.cor, 2, which.max)]
+
+plot.ACTIONet.igraph(ACTIONet.out, detailed.Labels)
+```
+
+
+
+## Network clustering using Leiden algorithm
+```{r}
+
+clusters = cluster.ACTIONet(ACTIONet.out, resolution = 1.0)
+plot.ACTIONet.igraph(ACTIONet.out, clusters, CPal = 'igv')
+
+```
+
+
+
+## Interactive view
+```{r}
+
+p = plot.ACTIONet.interactive(ACTIONet.out, sce, sce$CellType, node.size = 5)
+
+p
+
+```
+## Constructing subACTIONet of T-cells
+```{r}
+Tcell.fname = sprintf('%s/HumanPBMC_Tcell_ACTIONet_out.RDS', results_folder)
+
+if(!file.exists(Tcell.fname)) {
+  T.cells = grep('T cell', Labels)
+  
+  sce.T = sce[, T.cells]
+  sce.T = reduce.sce(sce.T)
+  
+  ACTIONet.out.T = run.ACTIONet(sce.T)
+
+  save(sce.T, ACTIONet.out.T, file = Tcell.fname)
+  
+} else {
+  load(Tcell.fname)
+}
+  plot.ACTIONet.igraph(ACTIONet.out.T, sce.T$CellType)
+  
+```
+
+
+## Projecting T-cell associated genesets
+```{r}
+  Tcell.GS = readRDS("input/Tcell_genesets_Azizi.RDS")
+
+  Tcell.GS.idx = sapply(Tcell.GS, function(genes) match(intersect(genes, rownames(sce.T)), rownames(sce.T)))
+  
+  gs.scores = assessFeatureSets(sce.T@assays[["logcounts"]], Tcell.GS.idx, rand_perm = 1000)
+  colnames(gs.scores) = names(Tcell.GS.idx)
+  
+  Z = gs.scores
+  Z[Z < 0] = 0
+  Z[Z > 5] = 5
+  
+
+  lapply(names(Tcell.GS), function(geneset.name) {
+    gs.score = Z[, geneset.name]
+    plot.ACTIONet.gradient(ACTIONet.out.T, gs.score, title = geneset.name, node.size = 5, CPal = "inferno", alpha_val = 0.5)
+  })
+
+  
+```
+
