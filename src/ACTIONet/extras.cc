@@ -5,19 +5,25 @@
 #include <prpack_solver.h>
 
 vec pagerank(sp_mat &G, vec u_vec, double alpha = 0.85, double tol = 1e-6) {
-	
+
 	prpack::prpack_base_graph g(G);
+
 	g.normalize_weights(); 
+	
+	
     prpack::prpack_solver solver(&g, false);
 
 	u_vec = normalise(u_vec, 1);
-	
+
+
 	double* u = new double[u_vec.size()];
 	memcpy(u, u_vec.memptr(), u_vec.size()*sizeof(double));
     double* v = u;
     
+    
     const prpack::prpack_result* res = solver.solve(alpha, tol, u, v, "");
     
+
     vec pr(res->x, res->num_vs);
         
     return pr;
@@ -59,6 +65,8 @@ namespace ACTIONetcore {
 	mat batchPR(sp_mat &G, mat U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {
 		
 		prpack::prpack_base_graph g(G);
+		
+		
 		g.normalize_weights(); 
 		prpack::prpack_solver solver(&g, false);
 		

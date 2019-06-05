@@ -6,13 +6,9 @@
 #include <cstdio>
 #include <utility>
 
-#define ARMA_DONT_USE_WRAPPER
-#undef ARMA_BLAS_CAPITALS
-#define ARMA_BLAS_UNDERSCORE
-#define ARMA_64BIT_WORD
-#define ARMA_BLAS_LONG_LONG
 
-#include "armadillo"
+#include "RcppArmadillo.h"
+using namespace arma;
 
 namespace prpack {
 

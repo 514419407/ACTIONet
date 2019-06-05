@@ -136,15 +136,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // buildAdaptiveACTIONet
-List buildAdaptiveACTIONet(mat& H_stacked, double LC, int thread_no);
-RcppExport SEXP _ACTIONet_buildAdaptiveACTIONet(SEXP H_stackedSEXP, SEXP LCSEXP, SEXP thread_noSEXP) {
+List buildAdaptiveACTIONet(mat& H_stacked, double LC, double epsilon, int thread_no);
+RcppExport SEXP _ACTIONet_buildAdaptiveACTIONet(SEXP H_stackedSEXP, SEXP LCSEXP, SEXP epsilonSEXP, SEXP thread_noSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< mat& >::type H_stacked(H_stackedSEXP);
     Rcpp::traits::input_parameter< double >::type LC(LCSEXP);
+    Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
     Rcpp::traits::input_parameter< int >::type thread_no(thread_noSEXP);
-    rcpp_result_gen = Rcpp::wrap(buildAdaptiveACTIONet(H_stacked, LC, thread_no));
+    rcpp_result_gen = Rcpp::wrap(buildAdaptiveACTIONet(H_stacked, LC, epsilon, thread_no));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -295,6 +296,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mergeArchetypes
+sp_mat mergeArchetypes(mat C_stacked, mat H_stacked);
+RcppExport SEXP _ACTIONet_mergeArchetypes(SEXP C_stackedSEXP, SEXP H_stackedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< mat >::type C_stacked(C_stackedSEXP);
+    Rcpp::traits::input_parameter< mat >::type H_stacked(H_stackedSEXP);
+    rcpp_result_gen = Rcpp::wrap(mergeArchetypes(C_stacked, H_stacked));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_reduceGeneExpression", (DL_FUNC) &_ACTIONet_reduceGeneExpression, 4},
@@ -307,7 +320,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_smoothKNN", (DL_FUNC) &_ACTIONet_smoothKNN, 2},
     {"_ACTIONet_computeNearestDist_edgeList", (DL_FUNC) &_ACTIONet_computeNearestDist_edgeList, 3},
     {"_ACTIONet_buildACTIONet", (DL_FUNC) &_ACTIONet_buildACTIONet, 3},
-    {"_ACTIONet_buildAdaptiveACTIONet", (DL_FUNC) &_ACTIONet_buildAdaptiveACTIONet, 3},
+    {"_ACTIONet_buildAdaptiveACTIONet", (DL_FUNC) &_ACTIONet_buildAdaptiveACTIONet, 4},
     {"_ACTIONet_layoutACTIONet", (DL_FUNC) &_ACTIONet_layoutACTIONet, 5},
     {"_ACTIONet_reconstructArchetypes", (DL_FUNC) &_ACTIONet_reconstructArchetypes, 4},
     {"_ACTIONet_extractArchetypeAssociatedSamples", (DL_FUNC) &_ACTIONet_extractArchetypeAssociatedSamples, 3},
@@ -319,6 +332,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_MWM", (DL_FUNC) &_ACTIONet_MWM, 1},
     {"_ACTIONet_batchPR", (DL_FUNC) &_ACTIONet_batchPR, 5},
     {"_ACTIONet_sweepcut", (DL_FUNC) &_ACTIONet_sweepcut, 2},
+    {"_ACTIONet_mergeArchetypes", (DL_FUNC) &_ACTIONet_mergeArchetypes, 2},
     {NULL, NULL, 0}
 };
 

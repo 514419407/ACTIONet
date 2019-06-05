@@ -91,7 +91,7 @@ namespace ACTIONetcore {
 	};	
 
 	field<sp_mat> buildACTIONet(mat &H_stacked, int kNN, int thread_no);
-	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC, int thread_no);
+	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC, double epsilon, int thread_no);
 
 	mat computeFullDist(mat &H_stacked, int thread_no, int verbose);
 	sp_mat computeNearestDist(mat &H_stacked, int kNN, int thread_no);
@@ -117,6 +117,7 @@ namespace ACTIONetcore {
 	mat batchPR(sp_mat &G, mat U, double alpha, int thread_no, double tol);
 	
 	mat smoothArchetypes(mat archetype_profile, mat backbone, double alpha_val, double beta_val);	
+	sp_mat mergeArchetypes(mat C_stacked, mat H_stacked);
 	
 	vec sweepcut(sp_mat A, vec s);
 	

@@ -64,9 +64,9 @@ List buildACTIONet(mat &H_stacked, int kNN = 30, int thread_no = 8) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-List buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, int thread_no = 8) {  
+List buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, double epsilon = 0.0, int thread_no = 8) {  
 		
-    field<sp_mat> res = ACTIONetcore::buildAdaptiveACTIONet(H_stacked, LC, thread_no);
+    field<sp_mat> res = ACTIONetcore::buildAdaptiveACTIONet(H_stacked, LC, epsilon, thread_no);
 
 	List out_list;		
 	out_list["ACTIONet"] = res(0);
@@ -260,4 +260,13 @@ vec sweepcut(sp_mat A, vec s) {
     vec conductance = ACTIONetcore::sweepcut(A, s);
 
     return conductance;
+}
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+sp_mat mergeArchetypes(mat C_stacked, mat H_stacked) {
+	sp_mat results = ACTIONetcore::mergeArchetypes(C_stacked, H_stacked);
+
+    return results;	
 }

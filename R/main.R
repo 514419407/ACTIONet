@@ -178,7 +178,7 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 	require(ACTIONet)
 	require(igraph)
 	require(Matrix)
-
+	require(stringr)
 	
 	GS.names = names(marker.genes)
 	if(is.null(GS.names)) {
@@ -190,7 +190,7 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 		if(length(genes) == 0)
 			return(data.frame())
 			
-		if(sum(grepl('-|+', genes, fixed = TRUE)) == 0) {
+		if(sum(grepl('-', genes, fixed = TRUE) + grepl('+', genes, fixed = TRUE)) == 0) {
 			df = data.frame(Gene = genes, Direction = +1, Celltype = celltype)
 		} else {
 			pos.genes = as.character(sapply(genes[grepl('+', genes, fixed = TRUE)], function(gene) stringr::str_replace(gene, stringr::fixed("+"), "")))

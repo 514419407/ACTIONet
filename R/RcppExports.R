@@ -41,8 +41,8 @@ buildACTIONet <- function(H_stacked, kNN = 30L, thread_no = 8L) {
     .Call(`_ACTIONet_buildACTIONet`, H_stacked, kNN, thread_no)
 }
 
-buildAdaptiveACTIONet <- function(H_stacked, LC = 1.0, thread_no = 8L) {
-    .Call(`_ACTIONet_buildAdaptiveACTIONet`, H_stacked, LC, thread_no)
+buildAdaptiveACTIONet <- function(H_stacked, LC = 1.0, epsilon = 0.0, thread_no = 8L) {
+    .Call(`_ACTIONet_buildAdaptiveACTIONet`, H_stacked, LC, epsilon, thread_no)
 }
 
 layoutACTIONet <- function(G, S_r, compactness_level = 1.0, n_epochs = 500L, thread_no = 8L) {
@@ -87,5 +87,9 @@ batchPR <- function(G, U, alpha = 0.85, thread_no = 8L, tol = 1e-6) {
 
 sweepcut <- function(A, s) {
     .Call(`_ACTIONet_sweepcut`, A, s)
+}
+
+mergeArchetypes <- function(C_stacked, H_stacked) {
+    .Call(`_ACTIONet_mergeArchetypes`, C_stacked, H_stacked)
 }
 

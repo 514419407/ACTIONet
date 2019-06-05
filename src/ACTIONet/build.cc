@@ -1,4 +1,5 @@
 #include <actionetcore.h>
+#include <atria.h>
 #include <vptree.h>
 
 namespace ACTIONetcore {
@@ -218,39 +219,76 @@ namespace ACTIONetcore {
 
 
 	// k^{*}-Nearest Neighbors: From Global to Local (NIPS 2016)
-	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, int thread_no=-1)	{
+	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, double epsilon = 0.0, int thread_no=4)	{
 
 		printf("Building adaptive ACTIONet\n");
-		
-		
+
+		H_stacked.transform( [](double val) { return (val < 0?0:val); } );
+		H_stacked = normalise(H_stacked, 1, 0); // make the norm (sum) of each column 1			
+
 		double kappa = 3.0;
 		int sample_no = H_stacked.n_cols;		
 		int kNN = min(sample_no-1, (int)(kappa*round(sqrt(sample_no)))); // start with uniform k=sqrt(N) ["Pattern Classification" book by Duda et al.]
 
-		field<mat> res = computeNearestDist_edgeList(H_stacked, kNN, thread_no);
-		printf("Done precomputing distances\n");fflush(stdout);
+
+		mat idx = zeros(sample_no, kNN+1);
+		mat dist = zeros(sample_no, kNN+1);
 		
-		mat idx = res(0);
-		mat dist = res(1);
+		int total_counts = 0, perc = 0;
+		#pragma omp parallel num_threads(thread_no) 
+		{			
+			Searcher *searcher = new Searcher(H_stacked, "jensen", 0, 64, 0);			
+			#pragma omp for
+			for (long n = 0; n < sample_no; n++) {
+				if(round(100*(double)total_counts / sample_no) > perc) {
+					printf("%d %%\n", perc);
+					perc++;
+				}
+
+				
+				vector<neighbor> v;
+				//mat::col_iterator it = H_stacked.begin_col(n);
+				vec h = H_stacked.col(n);
+				searcher->search_k_neighbors(v, kNN+1, h.begin(), -1, -1, epsilon);
+
+									 
+				for (long d = 0; d < v.size(); d++) {
+					#pragma omp critical
+					idx(n, d) = v[d].index() + 1; // Convert back to one-based indexing.
+					
+					#pragma omp critical
+					dist(n, d) = v[d].dist();
+				}
+				
+				total_counts ++;
+			}
+			
+			delete searcher;
+		}
+
+		
+		dist = clamp(dist, 0.0, 1.0); 
+		
 		
 		mat beta = LC*dist;
 		vec beta_sum = zeros(sample_no);
 		vec beta_sq_sum = zeros(sample_no);
 		
-		printf("Computing Lambda\n");
-		mat lambda(size(beta));
+		mat lambda = zeros(size(beta));
+		lambda.col(0) = datum::inf*ones(sample_no);
+		
 		register int k;
 		for(k = 1; k <= kNN; k++) {
 			beta_sum += beta.col(k);
 			beta_sq_sum += square(beta.col(k));
 			
-			lambda.col(k) = (1/(double)k) * ( beta_sum + sqrt(k + square(beta_sum) - k*beta_sq_sum) );
+			lambda.col(k) = (1.0/(double)k) * ( beta_sum + sqrt(k + square(beta_sum) - k*beta_sq_sum) );
 		}
-		printf("done\n");fflush(stdout);
-
+		lambda.replace(datum::nan, 0); 
+		
 		sp_mat D(sample_no, sample_no);
+		
 		//# pragma omp parallel for num_threads(thread_no) 
-		printf("Computing D\n");
 		lambda = trans(lambda);
 		vec node_lambda = zeros(sample_no);
 		beta = trans(beta);
@@ -259,46 +297,28 @@ namespace ACTIONetcore {
 
 			//printf("sum = %.2f, len = %d, idx = %d\n", sum(delta < 0), shift_idx.n);
 			uvec shift_idx = find(delta <= 0, 1, "first");
-			int neighbor_no = shift_idx.n_elem == 0?kNN:(shift_idx(0)-1);
+			int neighbor_no = shift_idx.n_elem == 0?(kNN):(shift_idx(0)-1);
 			
-			node_lambda(v) = lambda(neighbor_no, v);
+			//node_lambda(v) = lambda(neighbor_no, v);
 			
 			rowvec v_idx  = idx.row(v);
 			rowvec v_dist = dist.row(v); // Shall we use lambda instead?			
 			//vec v_dist = lambda(neighbor_no) - beta(span(0, neighbor_no), v);
 			//v_dist /= max(v_dist);
-			for (int i = 1; i <= v_idx.n_elem-1; i++) {				
+			for (int i = 1; i <= neighbor_no; i++) {				
 				int src = v_idx(i)-1;
 				int dst = v;
-				if(src > D.n_rows-1 || src < 0) {
-					printf("v = %d, i = %d, src = %d, nrows = %d\n", v, i, src, D.n_rows);
-					continue;
-				}
-				if(dst > D.n_cols-1 || dst < 0) {
-					printf("v = %d, i = %d, dst = %d, ncols = %d\n", v, i, dst, D.n_rows);
-					continue;
-				}
+
 				D(src, dst) = v_dist(i);
 			}
 		}
-		printf("done\n");fflush(stdout);
 		
 		
-		/*		
-		sp_mat G = D;
-		double epsilon = 1e-16;
-		for(sp_mat::iterator it = G.begin(); it != G.end(); ++it) {
-			(*it) = std::max(epsilon, node_lambda(it.col()) - LC*(*it));
-		}			
-		*/
-		
-		printf("Computing back to similarities\n");
 		// Old method of computing similarities
 		sp_mat G = D;
 		for(sp_mat::iterator it = G.begin(); it != G.end(); ++it) {
 		  (*it) = 1.0 - (*it);
 		}					
-		printf("done\n"); fflush(stdout);
 		
 		
 		field<sp_mat> output(2);

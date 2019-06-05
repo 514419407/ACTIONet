@@ -17,12 +17,16 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 	matched.idx = match(matched.genes, rownames(sce))
 
 	# Smooth/impute gene expressions
+	if(! (expr.slot %in% names(sce@assays)) ) {
+		R.utils::printf('%s is not in assays of sce\n', expr.slot)
+	}
 	raw.gene.expression = Matrix::t(as(sce@assays[[expr.slot]][matched.idx, ], 'dgTMatrix'))
 	U = raw.gene.expression
 	U[U < 0] = 0
 	cs = Matrix::colSums(U)
 	cs[cs == 0] = 1
 	U = Matrix::sparseMatrix(i = U@i+1, j = U@j+1, x = U@x / cs[U@j+1], dims = dim(U))
+
 	imputed.gene.expression = batchPR(G, as.matrix(U), alpha_val, thread_no)
 
 	# Prune values
