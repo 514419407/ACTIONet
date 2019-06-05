@@ -8,7 +8,6 @@
 
 
 #include "RcppArmadillo.h"
-using namespace arma;
 
 namespace prpack {
 

@@ -61,7 +61,7 @@ namespace ACTION {
 	void simplexRegression(mat &A, mat &B, double *X_ptr); // min_{X} (|| AX - B ||) s.t. simplex constraint
 	field<mat> AA (mat X, mat Z0); // Robust archetypal analysis method
 	ACTION_results runACTION(mat S_r, int k_min, int k_max, int numThreads); // Main ACTION function	
-	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim, int method, int iter);
+	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim, int method, int iter);	
 }
 
 #endif

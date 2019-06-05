@@ -3,8 +3,7 @@
 
 
 namespace ACTION {
-	field<mat> PCA(sp_mat &A, int dim, int max_it, int seed); // Randomized PCA function
-	Projection orthoPCA(sp_mat &profile, int PCA_dim, int iter, int seed); // PCA of orthogonalized matrix (using simplified version of the ACTION kernel method)
+	Projection reducedKernel(sp_mat &profile, int PCA_dim, bool ortho, int iter, int seed);
 
 	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim = DEFAULT_PCA_DIM, int method = ACTIONplusPCA, int iter = 10) {
 		printf("Reducing expression matrix\n");
@@ -14,21 +13,15 @@ namespace ACTION {
 			case PCA_only:
 				{
 					printf("\tReduce expression matrix using PCA only (k = %d) ... \n", reduced_dim); fflush(stdout);
-					field<mat> PCA_results = PCA(expression, reduced_dim, iter, 1365);		
+					Projection PCA_results = reducedKernel(expression, reduced_dim, false, iter, 1365);		
 					printf("done\n"); fflush(stdout);
-					
-					
-					projection.S_r = PCA_results(0);
-					projection.V = PCA_results(1);
-					projection.lambda = PCA_results(2);
-					projection.exp_var = PCA_results(3);
 				}
 				break;
 				
 			case ACTIONplusPCA:	// Uses dense formulation
 				{
 					printf("\tReduce expression matrix using orthogonalization followed by PCA (k = %d) using sparse formulation ... \n", reduced_dim); fflush(stdout);
-					projection = orthoPCA(expression, reduced_dim, iter, 1365);				
+					Projection PCA_results = reducedKernel(expression, reduced_dim, true, iter, 1365);		
 					printf("done\n"); fflush(stdout);
 				}
 				break;
