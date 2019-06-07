@@ -101,7 +101,7 @@ construct.signature.profile <- function(sce, ACTIONet.out) {
 	return(archetype.signature.profile)
 }
 
-identify.core.archetypes <- function(ACTIONet.out, pruning.zscore.threshold = 0) {
+identify.core.archetypes <- function(ACTIONet.out, pruning.zscore.threshold = 3) {
 	require(igraph)
 	require(ACTIONet)
 	
@@ -120,7 +120,7 @@ identify.core.archetypes <- function(ACTIONet.out, pruning.zscore.threshold = 0)
 }
 
 
-run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8, LC = 1.0, arch.specificity.z = -1, core.z = 1, sce.data.attr = "logcounts") {
+run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8, LC = 1.0, arch.specificity.z = -1, core.z = 3.0, sce.data.attr = "logcounts") {
 	require(Matrix)
 	require(igraph)
 	require(ACTIONet)
@@ -166,7 +166,7 @@ run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8,
 	signature.profile = construct.signature.profile(sce = sce, ACTIONet.out = ACTIONet.out) 
 	ACTIONet.out$signature.profile = signature.profile
 		
-	core.out = identify.core.archetypes(ACTIONet.out, 1)
+	core.out = identify.core.archetypes(ACTIONet.out, core.z)
 	H.core = runsimplexRegression(t(sce@reducedDims[["S_r"]]) %*% ACTIONet.out$reconstruct.out$C_stacked[, core.out$core.archs], t(sce@reducedDims[["S_r"]]))
 	core.out$H = H.core	
 	ACTIONet.out$core.out = core.out
