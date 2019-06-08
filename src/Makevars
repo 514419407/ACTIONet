@@ -1,3 +1,9 @@
+CC=gcc-9
+CXX=g++-9
+CXX11=g++-9
+CXX14=g++-9
+CXX17=g++-9
+CXX1X=g++-9
 SOURCES=$(wildcard ACTION/*.cc)
 SOURCES+=$(wildcard ACTIONet/*.cc)
 SOURCES+=$(wildcard leiden/*.cc)
