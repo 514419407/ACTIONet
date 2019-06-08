@@ -92,7 +92,7 @@ namespace ACTION {
 			printf("done\n");
 			
 			for (int i = 1; i <= iters; i++) {
-				printf("\t\t\t\tIter %d/%d done\n", i, iters);				
+				printf("\t\t\t\tIter %d/%d ... ", i, iters);				
 				
 				if (i == iters) {
 					SVD_out = eigSVD(A*(trans(A)*Q));
@@ -102,16 +102,17 @@ namespace ACTION {
 					lu(L, U, A*(trans(A)*Q));
 					Q = L;
 				}
+				printf("done\n");				
 			}
 			
 			SVD_out = eigSVD(trans(A)*Q);
-			U = SVD_out(0);
-			S = SVD_out(1);
-			V = SVD_out(2);
+			V = SVD_out(0);
+			S = vec(SVD_out(1));
+			U = SVD_out(2);
 			
-			U = Q*U.cols(s, dim+s-1);
-			V = V.cols(s, dim+s-1);
-			S = S(span(s, dim+s-1));
+			U = Q*fliplr(U.cols(s, dim+s-1));
+			V = fliplr(V.cols(s, dim+s-1));
+			S = flipud(S(span(s, dim+s-1)));
 		}
 		else {
 			printf("\t\t\tInitializing PCA (mode 2) ... ");				
@@ -128,7 +129,7 @@ namespace ACTION {
 			printf("done\n");
 			
 			for (int i = 1; i <= iters; i++) {
-				printf("\t\t\t\tIter %d/%d done\n", i, iters);				
+				printf("\t\t\t\tIter %d/%d ... ", i, iters);				
 				
 				if (i == iters) {
 					SVD_out = eigSVD(trans(A)*(A*Q));
@@ -138,29 +139,32 @@ namespace ACTION {
 					lu(L, U, trans(A)*(A*Q));
 					Q = L;
 				}
+				printf("done\n");				
+				
 			}
 			
 			SVD_out = eigSVD(A*Q);
 			U = SVD_out(0);
-			S = SVD_out(1);
+			S = vec(SVD_out(1));
 			V = SVD_out(2);
 						
 			
-			U = U.cols(s, dim+s-1);
-			V = Q*V.cols(s, dim+s-1);
-			S = S(span(s, dim+s-1));
+			U = fliplr(U.cols(s, dim+s-1));
+			V = Q*fliplr(V.cols(s, dim+s-1));
+			S = flipud(S(span(s, dim+s-1)));
 		}		
+	
+	
+		field<mat> out(3);		
+		out(0) = U;
+		out(1) = S;
+		out(2) = V;
 		
-		uvec perm = sort_index(S, "descend");
-		
-		field<mat> out(3);
-		
-		out(0) = U.cols(perm);
-		out(1) = S(perm);
-		out(2) = V.cols(perm);
+		printf("\t\t\tdone\n");	fflush(stdout);			
 		
 		return(out);
 	}
+
 
 	void gram_schmidt(mat& A) {
 		for(uword i = 0; i < A.n_cols; ++i) {

@@ -506,6 +506,39 @@ plot.ACTIONet.gene.view <- function(ACTIONet.out, top.gene.count = 10, blacklist
 	plot(p)	
 }
 
+plot.ACTIONet.gene.view.heatmap <- function(ACTIONet.out, arch.Labels, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|MT-') {
+	signature.profile = ACTIONet.out$signature.profile[, ACTIONet.out$core.out$core.archs]
+
+	filtered.row.mask = grepl(blacklist.pattern, toupper(rownames(sce)))
+	signature.profile = signature.profile[!filtered.row.mask, ]
+
+	sorted.top.genes = apply(signature.profile, 2, function(x) rownames(signature.profile)[order(x, decreasing = TRUE)[1:top.gene.count]])
+	selected.genes = sort(unique(as.character(sorted.top.genes)))
+
+	X = signature.profile[selected.genes, ]
+	colnames(X) = arch.Labels[ACTIONet.out$core.out$core.archs]
+	X = X[, order(arch.Labels[ACTIONet.out$core.out$core.archs])]
+	
+	
+	IDX = split(1:dim(X)[2], colnames(X))
+	X = X[order(apply(sapply(IDX, function(idx) Matrix::rowMeans(X[, idx])), 1, which.max)), ]
+	
+	Z = X #t(scale(t(scale(X))))
+	
+	require(ComplexHeatmap)
+	Pal = ggpubr::get_palette("d3", length(levels(arch.Labels)))
+	names(Pal) = levels(arch.Labels)
+
+	ha_column = HeatmapAnnotation(df = data.frame(celltype = colnames(Z)), col = list(celltype = Pal), width = unit(0.5, "cm"), annotation_legend_param = list(celltype=list(title_gp = gpar(fontsize = 8), labels_gp = gpar(fontsize = 5))))
+
+
+	ht_list = ComplexHeatmap::Heatmap(Z, row_names_gp = gpar(fontsize =8), column_names_gp = gpar(fontsize = 0), top_annotation = ha_column, cluster_columns = FALSE, name = 'Expression (scaled)')
+
+	draw(ht_list, heatmap_legend_side = "right", annotation_legend_side = "left")
+
+}
+
+
 plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|MT-', marker.per.cell = 5, node.size = 2, CPal = "d3") {
 	
 	require(plotly)
