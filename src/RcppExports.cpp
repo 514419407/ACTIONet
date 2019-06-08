@@ -322,6 +322,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// signed_cluster
+vec signed_cluster(sp_mat A, double resolution_parameter);
+RcppExport SEXP _ACTIONet_signed_cluster(SEXP ASEXP, SEXP resolution_parameterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< sp_mat >::type A(ASEXP);
+    Rcpp::traits::input_parameter< double >::type resolution_parameter(resolution_parameterSEXP);
+    rcpp_result_gen = Rcpp::wrap(signed_cluster(A, resolution_parameter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// unsigned_cluster
+vec unsigned_cluster(sp_mat A, double resolution_parameter);
+RcppExport SEXP _ACTIONet_unsigned_cluster(SEXP ASEXP, SEXP resolution_parameterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< sp_mat >::type A(ASEXP);
+    Rcpp::traits::input_parameter< double >::type resolution_parameter(resolution_parameterSEXP);
+    rcpp_result_gen = Rcpp::wrap(unsigned_cluster(A, resolution_parameter));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_reduceGeneExpression", (DL_FUNC) &_ACTIONet_reduceGeneExpression, 4},
@@ -348,6 +372,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_batchPR", (DL_FUNC) &_ACTIONet_batchPR, 5},
     {"_ACTIONet_sweepcut", (DL_FUNC) &_ACTIONet_sweepcut, 2},
     {"_ACTIONet_mergeArchetypes", (DL_FUNC) &_ACTIONet_mergeArchetypes, 2},
+    {"_ACTIONet_signed_cluster", (DL_FUNC) &_ACTIONet_signed_cluster, 2},
+    {"_ACTIONet_unsigned_cluster", (DL_FUNC) &_ACTIONet_unsigned_cluster, 2},
     {NULL, NULL, 0}
 };
 

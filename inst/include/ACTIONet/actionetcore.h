@@ -120,6 +120,9 @@ namespace ACTIONetcore {
 	sp_mat mergeArchetypes(mat C_stacked, mat H_stacked);
 	
 	vec sweepcut(sp_mat A, vec s);
+
+	vec unsigned_cluster(sp_mat A, double resolution_parameter);
+	vec signed_cluster(sp_mat A, double resolution_parameter);
 	
 }
 

@@ -97,3 +97,11 @@ mergeArchetypes <- function(C_stacked, H_stacked) {
     .Call(`_ACTIONet_mergeArchetypes`, C_stacked, H_stacked)
 }
 
+signed_cluster <- function(A, resolution_parameter = 1.0) {
+    .Call(`_ACTIONet_signed_cluster`, A, resolution_parameter)
+}
+
+unsigned_cluster <- function(A, resolution_parameter = 1.0) {
+    .Call(`_ACTIONet_unsigned_cluster`, A, resolution_parameter)
+}
+

@@ -227,3 +227,8 @@ annotate.archetype <- function(ACTIONet.out, Labels, rand_perm_no = 1000) {
 }
 
 
+cluster.ACTIONet <- function(ACTIONet.out, resolution_parameter = 1.0) {
+	clusters = unsigned_cluster(ACTIONet.out$build.out$ACTIONet, resolution_parameter)
+	
+	return(clusters)
+}

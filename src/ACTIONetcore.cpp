@@ -270,3 +270,20 @@ sp_mat mergeArchetypes(mat C_stacked, mat H_stacked) {
 
     return results;	
 }
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+vec signed_cluster(sp_mat A, double resolution_parameter = 1.0) {
+	vec clusters = ACTIONetcore::signed_cluster(A, resolution_parameter);
+
+    return clusters;	
+}
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0) {
+	vec clusters = ACTIONetcore::unsigned_cluster(A, resolution_parameter);
+
+    return clusters;	
+}
