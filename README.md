@@ -29,7 +29,7 @@ Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars
 
 ```{bash}
  mkdir -p ~/.R
- wget https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
+ wget --no-check-certificate https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
 ```
 
 Now you can install ACTIONet package with devtools:
@@ -61,7 +61,7 @@ Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars
 
 ```{bash}
  mkdir -p ~/.R
- wget https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
+ wget --no-check-certificate https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
 ```
 
 Now you can install ACTIONet package with devtools:
