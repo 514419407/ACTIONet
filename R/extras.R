@@ -1,4 +1,47 @@
 
+map.clusters <- function(Labels, clusters) {
+  N = length(Labels)
+  cluster.ids = sort(unique(clusters))
+  if(is.factor(Labels))
+	Label.ids = levels(Labels)
+  else
+	Label.ids = sort(unique(Labels))
+  
+  W = sapply(Label.ids, function(label) {
+    idx1 = which(Labels == label)
+    n1 = length(idx1)
+    if(n1 == 0)
+		return(array(0, length(cluster.ids)))
+		
+    log.pvals = sapply(cluster.ids, function(cluster.id) {
+		idx2 = which(clusters == cluster.id)
+		n2 = length(idx2)
+		if(n2  == 0)
+			return(0)
+			
+		success = intersect(idx1, idx2)
+		
+		pval = phyper(length(success)-1, n1, N - n1, n2, lower.tail = FALSE)
+		return(-log10(pval))
+    })
+    return(log.pvals)
+  })
+
+  W[is.na(W)] = 0
+  W[W > 300] = 300
+  
+  W.matched = MWM(W)
+  W.matched = as(W.matched, 'dgTMatrix')
+  
+  updated.Labels = rep(NA, length(Labels))
+  matched.clusters = W.matched@i+1
+  matched.celltype = Label.ids[W.matched@j+1]
+  for(k in 1:length(matched.clusters)) {
+    updated.Labels[clusters == matched.clusters[k]] = matched.celltype[[k]]    
+  }
+  
+  return(updated.Labels)
+}
 
 impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, thread_no = 8, prune = FALSE, rescale = TRUE, expr.slot = "logcounts") {
 	
