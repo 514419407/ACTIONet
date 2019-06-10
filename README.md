@@ -25,11 +25,11 @@ Or install it from the source from https://igraph.org/c/.
 
 
 
-Create  *~/.R* folder and copy *Makervars_gcc.txt* there under the name *Makevars*: 
+Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars*: 
 
 ```{bash}
  mkdir -p ~/.R
- wget https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makervars
+ wget https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
 ```
 
 Now you can install ACTIONet package with devtools:
@@ -57,11 +57,11 @@ brew install igraph
 
 Or install it from the source from https://igraph.org/c/.
 
-Create  *~/.R* folder and copy *Makervars_gcc.txt* there under the name *Makevars*: 
+Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars*: 
 
 ```{bash}
  mkdir -p ~/.R
- wget https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makervars
+ wget https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
 ```
 
 Now you can install ACTIONet package with devtools:
