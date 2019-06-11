@@ -1,8 +1,10 @@
 #include "ACTION.h"
-#include "arch.h"
-
+#include <omp.h>
 
 namespace ACTION {
+	void simplexRegression(double *A_ptr, int A_cols, double *B_ptr, int B_rows, int B_cols, double *X_ptr);
+	void AA (double *A_ptr, int A_rows, int A_cols, double *W0_ptr, int W0_cols, double *C_ptr, double *H_ptr);
+
 	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim = DEFAULT_PCA_DIM, int method = ACTIONplusPCA, int iter = 10) {
 		printf("Reducing expression matrix\n");
 		Projection projection;
@@ -78,37 +80,26 @@ namespace ACTION {
 		return res;
 	}
 
-	field<mat> AA (mat A, mat W0) {
-		mat C = zeros(A.n_cols, W0.n_cols);
-		mat H = zeros(W0.n_cols, A.n_cols);
-
-
-		SPAMS_Matrix<double> C_spam;		
-		C_spam._X = C.memptr();
-		C_spam._externAlloc = true;	
+	field<mat> AA (mat &A, mat &W0) {
+		double *A_ptr = A.memptr();
+		double *W0_ptr = W0.memptr();
 		
-		SPAMS_Matrix<double> H_spam;		
-		H_spam._X = H.memptr();
-		H_spam._externAlloc = true;
-
-		SPAMS_Matrix<double> A_spam(A.memptr(), A.n_rows, A.n_cols);
-		SPAMS_Matrix<double> W0_spam(W0.memptr(), W0.n_rows, W0.n_cols);
-
-		SPAMS_Matrix<double> W_spam(W0.n_rows, W0.n_cols);
-
+		int A_rows = A.n_rows;
+		int A_cols = A.n_cols;
+		int W0_cols = W0.n_cols;
 		
-		double lambda2 = 1e-5;
-		double epsilon = 1e-5;
-		int stepsFISTA = 3;
-		int stepsAS = 50;			
-			
-		arch_dense(A_spam, W0_spam, W_spam, H_spam, C_spam, stepsFISTA, stepsAS, epsilon,lambda2, false); //arch_dense(A, W0, Z, A, B....)
+		double *C_ptr = (double *)calloc(A_cols*W0_cols, sizeof(double));
+		double *H_ptr = (double *)calloc(A_cols*W0_cols, sizeof(double));
 
-		// Just in case!
-		C.transform( [](double val) { return (val < 0? 0:val); } );
-		H.transform( [](double val) { return (val < 0? 0:val); } );
+		AA(A_ptr, A_rows, A_cols, W0_ptr, W0_cols, C_ptr, H_ptr);
+		
+		mat C = mat(C_ptr, A_cols, W0_cols);
+		mat H = mat(H_ptr, W0_cols, A_cols);
+
+		C = clamp(C, 0, 1);
 		C = normalise(C, 1);
-		H = normalise(H, 1);	
+		H = clamp(H, 0, 1);
+		H = normalise(H, 1);
 		
 		field<mat> decomposition(2,1);
 		decomposition(0) = C;
@@ -118,28 +109,16 @@ namespace ACTION {
 	}
 
 	void simplexRegression(mat &A, mat &B, double *X_ptr) { // min(|| AX - B ||) s.t. simplex constraint
-		double lambda2 = 1e-5;
-		double epsilon = 1e-5;
+		double *A_ptr = A.memptr();
+		double *B_ptr = B.memptr();
 		
-		int k = A.n_cols; // # AA components
-
-		int cell_no = B.n_cols;
-		int dim = B.n_rows; // # PCA dimension
+		int A_cols = A.n_cols;
+		int B_rows = B.n_rows;
+		int B_cols = B.n_cols;
 		
-		SPAMS_Matrix<double> Z(A.memptr(), dim, k); 
-		SPAMS_Matrix<double> X(B.memptr(), dim, cell_no);	
-		SPAMS_Matrix<double> AlphaT(X_ptr, k, cell_no);
-		//SPAMS_Matrix<double> AlphaT(k, cell_no);
-		
-		Vector<double> refColX;
-		Vector<double> refColAlphaT;	
-		for(register int i = 0; i < cell_no; i++) {
-			X.refCol(i, refColX);
-			AlphaT.refCol(i, refColAlphaT);
-
-			activeSet<double>(Z, refColX, refColAlphaT, lambda2, epsilon);
-		}			
+		simplexRegression(A_ptr, A_cols, B_ptr, B_rows, B_cols, X_ptr);
 	}
+
 
 	ACTION_results runACTION(mat S_r, int k_min, int k_max, int numThreads) {
 		int feature_no = S_r.n_rows;
@@ -156,7 +135,7 @@ namespace ACTION {
 		
 		mat X_r = normalise(S_r, 1);
 		 
-		init_omp(numThreads);
+		omp_set_num_threads(numThreads);
 
 		printf("Iterating from k=%d ... %d\n", k_min, k_max);
 		
