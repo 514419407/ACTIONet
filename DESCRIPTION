@@ -8,6 +8,6 @@ Maintainer: Shahin Mohammadi <mohammadi@broadinstitute.org>
 Description: 
 License: GPL (>= 2)
 biocViews:
-Imports: Rcpp (>= 0.12.1), Matrix,SingleCellExperiment,scran,scater,igraph,ggpubr,ggplot2,ggrepel,plotly,threejs,viridis,scales
+Imports: Rcpp (>= 0.12.1), Matrix,ComplexHeatmap,org.Hs.eg.db,SingleCellExperiment,scran,scater,igraph,ggpubr,ggplot2,ggrepel,plotly,threejs,viridis,scales
 LinkingTo: Rcpp,RcppArmadillo
 Encoding: UTF-8

@@ -464,7 +464,7 @@ visualize.ADTs <- function(ACTIONet.out, sce, alpha_val = 0.95, node.size = 2, C
 }
 
 
-plot.ACTIONet.gene.view <- function(ACTIONet.out, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|MT-') {
+plot.ACTIONet.gene.view <- function(ACTIONet.out, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP') {
 	signature.profile = ACTIONet.out$signature.profile[, ACTIONet.out$core.out$core.archs]
 
 	filtered.row.mask = grepl(blacklist.pattern, toupper(rownames(sce)))
@@ -506,7 +506,7 @@ plot.ACTIONet.gene.view <- function(ACTIONet.out, top.gene.count = 10, blacklist
 	plot(p)	
 }
 
-plot.ACTIONet.gene.view.heatmap <- function(ACTIONet.out, arch.Labels, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|MT-') {
+plot.ACTIONet.gene.view.heatmap <- function(ACTIONet.out, arch.Labels, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP') {
 	signature.profile = ACTIONet.out$signature.profile[, ACTIONet.out$core.out$core.archs]
 
 	filtered.row.mask = grepl(blacklist.pattern, toupper(rownames(sce)))
@@ -539,7 +539,7 @@ plot.ACTIONet.gene.view.heatmap <- function(ACTIONet.out, arch.Labels, top.gene.
 }
 
 
-plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|MT-', marker.per.cell = 5, node.size = 2, CPal = "d3") {
+plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP', marker.per.cell = 5, node.size = 2, CPal = "d3") {
 	
 	require(plotly)
 	require(ACTIONet)

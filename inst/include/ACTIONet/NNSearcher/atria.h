@@ -43,7 +43,7 @@ public:
     } else if (metric.compare("jensen") == 0) {
       metric_ = "jensen";
     } else {
-      fprintf(stderr, "Unknown metric %s\n", metric);
+      fprintf(stderr, "Unknown metric %s\n", metric.c_str());
       exit(-1);
     }
     if (metric_ == "euclidian") {
