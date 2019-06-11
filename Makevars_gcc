@@ -1,9 +1,2 @@
-## for C++ code
-CXXFLAGS=             -g -O4 -Wall -pipe -Wno-unused -pedantic -std=c++11
-
-VER=-9
-CXX=g++${VER}
-CXX1X=g++${VER}
-FC=gfortran${VER}
-F77=gfortran${VER}
-MAKE=make -j8
+CXXFLAGS=-std=c++14 -lstdc++ -w -m64 -fPIC -march=native -O4 -DUSE_BLAS_LIB -DAXPBY -DINT_64BITS
+CXX=g++-9
