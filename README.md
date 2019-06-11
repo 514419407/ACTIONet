@@ -32,6 +32,16 @@ Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars
  wget --no-check-certificate https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
 ```
 
+Install Bioconductor dependencies:
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+
+BiocManager::install('scran', 'scater')
+```
+
 Now you can install ACTIONet package with devtools:
 
 ```{r}
@@ -62,6 +72,16 @@ Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars
 ```{bash}
  mkdir -p ~/.R
  wget --no-check-certificate https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
+```
+
+Install Bioconductor dependencies:
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+
+BiocManager::install('scran', 'scater')
 ```
 
 Now you can install ACTIONet package with devtools:
