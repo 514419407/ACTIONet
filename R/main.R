@@ -189,8 +189,9 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 		genes = marker.genes[[celltype]]
 		if(length(genes) == 0)
 			return(data.frame())
-			
-		if(sum(grepl('-', genes, fixed = TRUE) + grepl('+', genes, fixed = TRUE)) == 0) {
+		
+		is.signed = sum(sapply(genes, function(gene) {sgn_mark = stringr::str_sub(gene, start = -1); return(sgn_mark == "-" | sgn_mark == "+")}))
+		if(! is.signed ) {
 			df = data.frame(Gene = genes, Direction = +1, Celltype = celltype)
 		} else {
 			pos.genes = as.character(sapply(genes[grepl('+', genes, fixed = TRUE)], function(gene) stringr::str_replace(gene, stringr::fixed("+"), "")))
