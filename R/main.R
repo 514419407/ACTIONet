@@ -210,6 +210,7 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 	
 	IDX = split(1:dim(markers.table)[1], markers.table$Celltype)		
 	
+	print("Computing significance scores")
 	set.seed(0)
 	Z = sapply(IDX, function(idx) {
 		markers = as.character(markers.table$Gene[idx])
@@ -232,7 +233,7 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 		return(cell.zscores)
 	})
 
-	
+	Z[is.na(Z)] = 0
 	Labels = colnames(Z)[apply(Z, 1, which.max)]
 
 	L = names(marker.genes)
