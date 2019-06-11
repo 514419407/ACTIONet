@@ -6,15 +6,6 @@
 
 ### Linux
 
-Install (upgrade to) the latest version of gcc compiler:
-
-```{bash}
-sudo add-apt-repository ppa:jonathonf/gcc-9.0
-sudo apt-get install g++-9
-```
-
-
-
 Install igraph c++ interface
 
 ```{bash}
@@ -22,19 +13,6 @@ sudo apt-get install libigraph0-dev
 ```
 
 Or install it from the source from https://igraph.org/c/.
-
-
-
-Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars*: 
-
-```{bash}
- mkdir -p ~/.R
- wget --no-check-certificate https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
-```
-
-If you don't have wget, simply click on the *Makevars_gcc* file and copy the content of that into *~/.R/Makevars* file.
-
-
 
 Now you can install ACTIONet package with devtools:
 
@@ -47,10 +25,10 @@ devtools::install_github("shmohammadi86/ACTIONet", ref = "R-release")
 
 ### Mac OS
 
-Install (upgrade to) the latest version of gcc compiler:
+Install the latest version of clang compiler with OpenMP support:
 
 ```{bash}
-brew install gcc@9
+brew install llvm
 ```
 
 Install igraph c++ interface
@@ -61,14 +39,12 @@ brew install igraph
 
 Or install it from the source from https://igraph.org/c/.
 
-Create  *~/.R* folder and copy *Makevars_gcc.txt* there under the name *Makevars*: 
+Make sure updated clang is used for compiling R packages
 
 ```{bash}
- mkdir -p ~/.R
- wget --no-check-certificate https://raw.githubusercontent.com/shmohammadi86/ACTIONet/master/Makevars_gcc -O ~/.R/Makevars
-```
+mkdir -p ~/.R && echo -e "CXXFLAGS=-std=c++14 -lstdc++ -w -m64 -fPIC -march=native -O4\nCXX=/usr/local/opt/llvm/bin/clang++\n" > ~/.R/Makevars
 
-If you don't have wget, simply click on the *Makevars_gcc* file and copy the content of that into *~/.R/Makevars* file.
+```
 
 Now you can install ACTIONet package with devtools:
 
