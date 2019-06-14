@@ -192,21 +192,28 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 		
 		is.signed = sum(sapply(genes, function(gene) {sgn_mark = stringr::str_sub(gene, start = -1); return(sgn_mark == "-" | sgn_mark == "+")}))
 		if(! is.signed ) {
-			df = data.frame(Gene = genes, Direction = +1, Celltype = celltype)
+			df = data.frame(Gene = toupper(genes), Direction = +1, Celltype = celltype)
 		} else {
-			pos.genes = as.character(sapply(genes[grepl('+', genes, fixed = TRUE)], function(gene) stringr::str_replace(gene, stringr::fixed("+"), "")))
-			neg.genes = as.character(sapply(genes[grepl('-', genes, fixed = TRUE)], function(gene) stringr::str_replace(gene, stringr::fixed("-"), "")))
+			pos.genes = toupper(as.character(sapply(genes[grepl('+', genes, fixed = TRUE)], function(gene) stringr::str_replace(gene, stringr::fixed("+"), ""))))
+			neg.genes = toupper(as.character(sapply(genes[grepl('-', genes, fixed = TRUE)], function(gene) stringr::str_replace(gene, stringr::fixed("-"), ""))))
 			df = data.frame(Gene = c(pos.genes, neg.genes), Direction = c(rep(+1, length(pos.genes)), rep(-1, length(neg.genes))), Celltype= celltype)
 		}
 	}))
-	markers.table = markers.table[markers.table$Gene %in% rownames(sce), ]
+	markers.table = markers.table[toupper(markers.table$Gene) %in% toupper(rownames(sce)), ]
 	if(dim(markers.table)[1] == 0) {
 		print("No markers are left")
 		return()
 	}
 
-	imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, markers.table$Gene, alpha_val, thread_no, prune = TRUE)
-	
+	rows = match(toupper(markers.table$Gene), toupper(rownames(sce)))
+	if(length(markers.table$Gene) < 100) { # PageRank-based imputation
+		print("Using PageRank for imptation of marker genes")
+		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, markers.table$Gene, alpha_val, thread_no, prune = FALSE)
+	} else { # PCA-based imputation
+		print("Using archImpute for imptation of marker genes")
+		imputed.marker.expression = t(ACTIONet.out$signature.profile[rows, ACTIONet.out$core.out$core.archs] %*% ACTIONet.out$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])
+	}
+	colnames(imputed.marker.expression) = toupper(colnames(imputed.marker.expression))
 	
 	
 	IDX = split(1:dim(markers.table)[1], markers.table$Celltype)		
@@ -214,13 +221,12 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 	print("Computing significance scores")
 	set.seed(0)
 	Z = sapply(IDX, function(idx) {
-		markers = as.character(markers.table$Gene[idx])
+		markers = toupper(as.character(markers.table$Gene[idx]))
 		directions = markers.table$Direction[idx]		
 		mask = markers %in% colnames(imputed.marker.expression)
-
 		
 		A = imputed.marker.expression[, markers[mask]]
-		sgn = as.numeric(directions[mask])		
+		sgn = as.numeric(directions[mask])	
 		stat = A %*% sgn		
 		
 		rand.stats = sapply(1:rand.sample.no, function(i) {

@@ -114,15 +114,17 @@ namespace ACTIONetcore {
 	
 	vec extractArchetypeAssociatedSamples(sp_mat &G, vec h, double alpha = 0.85);
 	mat extractArchetypeAssociatedSamples(sp_mat &G, mat H_stacked, double alpha = 0.85);
-	mat batchPR(sp_mat &G, mat U, double alpha, int thread_no, double tol);
+	mat batchPR(sp_mat &G, mat &U, double alpha, int thread_no, double tol);
 	
 	mat smoothArchetypes(mat archetype_profile, mat backbone, double alpha_val, double beta_val);	
 	sp_mat mergeArchetypes(mat C_stacked, mat H_stacked);
 	
-	vec sweepcut(sp_mat A, vec s);
+	vec sweepcut(sp_mat &A, vec s);
 
-	vec unsigned_cluster(sp_mat A, double resolution_parameter);
-	vec signed_cluster(sp_mat A, double resolution_parameter);
+	vec unsigned_cluster(sp_mat A, double resolution_parameter, int seed);
+	vec signed_cluster(sp_mat A, double resolution_parameter, int seed);
+
+	umat Rank1_matching(vec u, vec v, double u_threshold, double v_threshold);
 	
 }
 

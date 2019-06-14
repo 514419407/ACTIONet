@@ -34,7 +34,7 @@ namespace prpack {
         private:
             // helper methods
             void initialize();
-            bool read_spmat(arma::sp_mat &G);
+            bool read_spmat(arma::sp_mat *G);
             bool read_smat(std::FILE* f, const bool weighted);
             void read_edges(std::FILE* f);
             void read_ascii(std::FILE* f);
@@ -53,7 +53,7 @@ namespace prpack {
             prpack_base_graph(const prpack_csr* g);
             prpack_base_graph(const prpack_edge_list* g);
             prpack_base_graph(const char* filename, const char* format, const bool weighted);
-            prpack_base_graph(arma::sp_mat &G);
+            prpack_base_graph(arma::sp_mat *G);
             prpack_base_graph(prpack_vtype nverts, prpack_vtype nedges, 
                 std::pair<prpack_vtype,prpack_vtype>* edges);
             // destructor

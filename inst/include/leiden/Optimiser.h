@@ -23,7 +23,8 @@ aggregated (collapse_graph) and the method is reiterated on that graph.
 class Optimiser
 {
   public:
-    Optimiser();
+    Optimiser(int seed);
+    
     double optimise_partition(MutableVertexPartition* partition);
     template <class T> T* find_partition(Graph* graph);
     template <class T> T* find_partition(Graph* graph, double resolution_parameter);

@@ -6,13 +6,13 @@
 #include <Optimiser.h>
 
 namespace ACTIONetcore {
-	vec signed_cluster(sp_mat A, double resolution_parameter) {
+	vec signed_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
 		int nV = A.n_rows;
 		int nE = A.n_nonzero;
 		
 		vec clusters = zeros(nV);
 		
-		printf("[signed] Clustering graph with %d vertices and %d edges\n", nV, nE);
+		printf("[signed] Clustering graph with %d vertices and %d edges (resolution = %.2f)\n", nV, nE, resolution_parameter);
 				
 		igraph_t g;
 		igraph_vector_t v;
@@ -40,7 +40,7 @@ namespace ACTIONetcore {
 
 		CPMVertexPartition* partition = new CPMVertexPartition(G, resolution_parameter);
 
-		Optimiser *opt = new Optimiser();
+		Optimiser *opt = new Optimiser(seed);
 		opt->optimise_partition(partition);
 	
 		for(int i = 0; i < nV; i++) {
@@ -56,13 +56,13 @@ namespace ACTIONetcore {
 		return(clusters);
 	}
 	
-	vec unsigned_cluster(sp_mat A, double resolution_parameter) {
+	vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
 		int nV = A.n_rows;
 		int nE = A.n_nonzero;
 		
 		vec clusters = zeros(nV);
 		
-		printf("[unsigned] Clustering graph with %d vertices and %d edges\n", nV, nE);
+		printf("[unsigned] Clustering graph with %d vertices and %d edges (resolution = %.2f)\n", nV, nE, resolution_parameter);
 				
 		igraph_t g;
 		igraph_vector_t v;
@@ -90,7 +90,7 @@ namespace ACTIONetcore {
 
 		RBConfigurationVertexPartition*partition = new RBConfigurationVertexPartition(G, resolution_parameter);
 
-		Optimiser *opt = new Optimiser();
+		Optimiser *opt = new Optimiser(seed);
 		opt->optimise_partition(partition);
 	
 		for(int i = 0; i < nV; i++) {

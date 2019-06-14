@@ -6,7 +6,7 @@
 
 vec pagerank(sp_mat &G, vec u_vec, double alpha = 0.85, double tol = 1e-6) {
 
-	prpack::prpack_base_graph g(G);
+	prpack::prpack_base_graph g(&G);
 
 	g.normalize_weights(); 
 	
@@ -32,7 +32,7 @@ vec pagerank(sp_mat &G, vec u_vec, double alpha = 0.85, double tol = 1e-6) {
 
 vec pagerank_scaled(sp_mat &G, vec u_vec, double alpha = 0.85, double tol = 1e-6) {
 	
-	prpack::prpack_base_graph g(G);
+	prpack::prpack_base_graph g(&G);
 	g.normalize_weights(); 
     prpack::prpack_solver solver(&g, false);
 
@@ -60,12 +60,10 @@ vec pagerank_scaled(sp_mat &G, vec u_vec, double alpha = 0.85, double tol = 1e-6
     return log_ratio;
 }
 
-
 namespace ACTIONetcore {
-	mat batchPR(sp_mat &G, mat U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {
+	mat batchPR(sp_mat &G, mat &U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {
 		
-		prpack::prpack_base_graph g(G);
-		
+		prpack::prpack_base_graph g(&G);		
 		
 		g.normalize_weights(); 
 		prpack::prpack_solver solver(&g, false);
@@ -107,7 +105,7 @@ namespace ACTIONetcore {
 		double *u, *v;
 		u = new double[nV];
 		
-		prpack::prpack_base_graph g(ACTIONet);
+		prpack::prpack_base_graph g(&ACTIONet);
 		g.normalize_weights(); 
 		prpack::prpack_solver solver(&g, false);
 
@@ -459,7 +457,7 @@ namespace ACTIONetcore {
 		return subs;
 	}		
 
-	vec sweepcut(sp_mat A, vec s) {
+	vec sweepcut(sp_mat &A, vec s) {
 		double vol = 0.0, cut = 0.0;
 		
 		int nV = A.n_rows;
@@ -504,5 +502,7 @@ namespace ACTIONetcore {
 		
 		return(u);
 	}
+
+
 
 }
