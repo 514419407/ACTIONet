@@ -1,15 +1,24 @@
+#define ARMA_USE_CXX11_RNG
+#define ARMA_64BIT_WORD
+
 #include <actionetcore.h>
 #include <RcppArmadillo.h>
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
 // [[Rcpp::plugins(openmp)]]
 
 using namespace Rcpp;
 
-#define ARMA_USE_CXX11_RNG
-
+// set seed
+// [[Rcpp::export]]
+void set_seed(double seed) {
+    Rcpp::Environment base_env("package:base");
+    Rcpp::Function set_seed_r = base_env["set.seed"];
+    set_seed_r(std::floor(std::fabs(seed)));
+}
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
@@ -247,8 +256,7 @@ mat MWM(mat &G) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-mat batchPR(sp_mat &G, mat U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {
-	
+mat batchPR(sp_mat &G, mat &U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {	
 	mat U_smoothed = ACTIONetcore::batchPR(G, U, alpha, thread_no, tol);
 	
     return U_smoothed;
@@ -256,7 +264,7 @@ mat batchPR(sp_mat &G, mat U, double alpha = 0.85, int thread_no = 8, double tol
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-vec sweepcut(sp_mat A, vec s) {
+vec sweepcut(sp_mat &A, vec s) {
     vec conductance = ACTIONetcore::sweepcut(A, s);
 
     return conductance;
@@ -274,16 +282,32 @@ sp_mat mergeArchetypes(mat C_stacked, mat H_stacked) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-vec signed_cluster(sp_mat A, double resolution_parameter = 1.0) {
-	vec clusters = ACTIONetcore::signed_cluster(A, resolution_parameter);
+vec signed_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
+    set_seed(seed);
+	
+	vec clusters = ACTIONetcore::signed_cluster(A, resolution_parameter, seed);
 
     return clusters;	
 }
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0) {
-	vec clusters = ACTIONetcore::unsigned_cluster(A, resolution_parameter);
+vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
+    set_seed(seed);
+
+	vec clusters = ACTIONetcore::unsigned_cluster(A, resolution_parameter, seed);
 
     return clusters;	
+}
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+umat Rank1_matching(vec u, vec v, double u_threshold = 0, double v_threshold = 0) {
+	
+	umat pairs = ACTIONetcore::Rank1_matching(u, v, u_threshold, v_threshold);
+	
+	pairs = pairs + 1;
+	
+	return(pairs);
 }

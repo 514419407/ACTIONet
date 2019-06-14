@@ -44,6 +44,7 @@ map.clusters <- function(Labels, clusters) {
 }
 
 impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, thread_no = 8, prune = FALSE, rescale = TRUE, expr.slot = "logcounts") {
+	genes = unique(genes)
 	
 	if(is.igraph(ACTIONet.out))
 		ACTIONet = ACTIONet.out
@@ -68,10 +69,10 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 	U[U < 0] = 0
 	cs = Matrix::colSums(U)
 	cs[cs == 0] = 1
-	U = Matrix::sparseMatrix(i = U@i+1, j = U@j+1, x = U@x / cs[U@j+1], dims = dim(U))
-
-	imputed.gene.expression = batchPR(G, as.matrix(U), alpha_val, thread_no)
-
+	U = as.matrix(Matrix::sparseMatrix(i = U@i+1, j = U@j+1, x = U@x / cs[U@j+1], dims = dim(U)))
+		
+	imputed.gene.expression = batchPR(G, U, alpha_val, thread_no)
+	
 	# Prune values
 	if(prune == TRUE) {
 		imputed.gene.expression = apply(imputed.gene.expression, 2, function(x) {
@@ -83,8 +84,7 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 			
 			return(x)
 		})
-	}
-	
+	}	
 	
 	# rescale 
 	if(rescale) {
@@ -108,12 +108,6 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 	}
 	
 	colnames(imputed.gene.expression) = matched.genes
-
-	# Prune unobserved genes
-	cs = Matrix::colSums(imputed.gene.expression)
-	filtered.genes = which(cs == 0)
-	if(length(filtered.genes) > 0)
-		imputed.gene.expression = imputed.gene.expression[, -filtered.genes]
 		
 	return(imputed.gene.expression)
 }
@@ -227,8 +221,12 @@ prop.Labels <- function(ACTIONet.out, Labels, max_it = 3) {
 }
 
 update.Labels <- function(ACTIONet.out, Labels) {
+
+	if(is.igraph(ACTIONet.out))
+		ACTIONet = ACTIONet.out
+	else
+		ACTIONet = ACTIONet.out$ACTIONet
 	
-	ACTIONet = ACTIONet.out$ACTIONet
 	if(is.character(Labels))
 		Labels = factor(Labels, levels = sort(unique(Labels)))
 	

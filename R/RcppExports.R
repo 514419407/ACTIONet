@@ -25,6 +25,10 @@ frSVD <- function(A, dim, iters = 5L, seed = 0L) {
     .Call(`_ACTIONet_frSVD`, A, dim, iters, seed)
 }
 
+set_seed <- function(seed) {
+    invisible(.Call(`_ACTIONet_set_seed`, seed))
+}
+
 computeFullDist <- function(H_stacked, thread_no = 4L, verbose = 1L) {
     .Call(`_ACTIONet_computeFullDist`, H_stacked, thread_no, verbose)
 }
@@ -97,11 +101,15 @@ mergeArchetypes <- function(C_stacked, H_stacked) {
     .Call(`_ACTIONet_mergeArchetypes`, C_stacked, H_stacked)
 }
 
-signed_cluster <- function(A, resolution_parameter = 1.0) {
-    .Call(`_ACTIONet_signed_cluster`, A, resolution_parameter)
+signed_cluster <- function(A, resolution_parameter = 1.0, seed = 0L) {
+    .Call(`_ACTIONet_signed_cluster`, A, resolution_parameter, seed)
 }
 
-unsigned_cluster <- function(A, resolution_parameter = 1.0) {
-    .Call(`_ACTIONet_unsigned_cluster`, A, resolution_parameter)
+unsigned_cluster <- function(A, resolution_parameter = 1.0, seed = 0L) {
+    .Call(`_ACTIONet_unsigned_cluster`, A, resolution_parameter, seed)
+}
+
+Rank1_matching <- function(u, v, u_threshold = 0, v_threshold = 0) {
+    .Call(`_ACTIONet_Rank1_matching`, u, v, u_threshold, v_threshold)
 }
 

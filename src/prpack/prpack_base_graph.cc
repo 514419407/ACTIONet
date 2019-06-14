@@ -20,7 +20,7 @@ prpack_base_graph::prpack_base_graph() {
 	num_vs = num_es = 0;
 }
 
-prpack_base_graph::prpack_base_graph(arma::sp_mat &G) {
+prpack_base_graph::prpack_base_graph(arma::sp_mat *G) {
 	read_spmat(G);
 }
 
@@ -263,9 +263,9 @@ bool prpack_base_graph::read_spmat(arma::sp_mat &G) {
 */
 
 
-bool prpack_base_graph::read_spmat(arma::sp_mat &G) {
-	this->num_vs = G.n_rows;
-	this->num_es = G.n_nonzero;
+bool prpack_base_graph::read_spmat(arma::sp_mat *G) {	
+	this->num_vs = G->n_rows;
+	this->num_es = G->n_nonzero;
 
     // fill in heads and tails
     num_self_es = 0;
@@ -279,7 +279,7 @@ bool prpack_base_graph::read_spmat(arma::sp_mat &G) {
     memset(tails, 0, num_vs*sizeof(tails[0]));
     
     register int i = 0;
-	for(arma::sp_mat::iterator it = G.begin(); it != G.end(); ++it) {
+	for(arma::sp_mat::iterator it = G->begin(); it != G->end(); ++it) {
 		hs[i] = it.row();
 		ts[i] = it.col();
 		vs[i] = (*it);
