@@ -13,6 +13,7 @@ reduce.sce <- function(sce, reduced_dim = 50, max.iter = 5, normalize = TRUE) {
 		sce.norm = sce
 	}
 	
+	set.seed(0)
 	reduction.out = reduceGeneExpression(as(sce.norm@assays[["logcounts"]], 'sparseMatrix'), reduced_dim = reduced_dim, method = 1, iters = max.iter)    
 
 	SingleCellExperiment::reducedDim(sce.norm, "S_r") <- t(reduction.out$S_r)
@@ -29,15 +30,32 @@ reduce.sce <- function(sce, reduced_dim = 50, max.iter = 5, normalize = TRUE) {
 	return(sce.norm)  
 }
 
+batch.correct.sce.Harmony <- function(sce, batch.attr) {
+	require(harmony)
+	sce@reducedDims$S_r = harmony::HarmonyMatrix(sce@reducedDims$S_r, batch.attr, do_pca=FALSE)	
+	return(sce)
+}
 
-reduce.and.batch.correct.sce <- function(sce, batch.attr=NA, reduced_dim = 50, k=20) {
+
+reduce.and.batch.correct.sce.Harmony <- function(sce, batch.attr=NA, reduced_dim = 50) {
+	if(is.na(batch.attr)) {
+		print("You need to provide the batch vector/attr");
+		return(sce)
+	}
+
+	set.seed(0)
+	sce = reduce.sce(sce, reduced_dim = reduced_dim)
+	batch.correct.sce.Harmony(sce, batch.attr)
+}
+
+reduce.and.batch.correct.sce.MNN <- function(sce, batch.attr=NA, reduced_dim = 50, k=20) {
 	require(scran)
 	require(scater)
 	require(ACTIONet)
 
-	if(is.na(batch.attr)) {
+	if(length(batch.attr) ==  1 && is.na(batch.attr)) {
 		print("You need to provide the batch vector/attr");
-		return()
+		return(sce)
 	}
 
 	sce = clearSpikes(sce)
@@ -120,7 +138,7 @@ identify.core.archetypes <- function(ACTIONet.out, pruning.zscore.threshold = 3)
 }
 
 
-run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8, LC = 1.0, arch.specificity.z = -1, core.z = 3.0, sce.data.attr = "logcounts") {
+run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8, epsilon = 3.0, LC = 1.0, auto_adjust_LC = FALSE, arch.specificity.z = -1, core.z = 3.0, n_epochs = 500, sce.data.attr = "logcounts") {
 	require(Matrix)
 	require(igraph)
 	require(ACTIONet)
@@ -138,10 +156,10 @@ run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8,
 	rownames(reconstruct.out$archetype_profile) = rownames(sce)
 
 	# Build ACTIONet
-	build.out = buildAdaptiveACTIONet(H_stacked = reconstruct.out$H_stacked, thread_no = 8, LC = 1.0)
+	build.out = buildAdaptiveACTIONet(H_stacked = reconstruct.out$H_stacked, thread_no = thread_no, LC = LC, auto_adjust_LC = auto_adjust_LC, epsilon = epsilon)
 
 	# Layout ACTIONet
-	vis.out = layoutACTIONet(build.out$ACTIONet, S_r = t(sce@reducedDims[["S_r"]]), compactness_level = 50, n_epochs = 500)
+	vis.out = layoutACTIONet(build.out$ACTIONet, S_r = t(sce@reducedDims[["S_r"]]), compactness_level = compactness_level, n_epochs = n_epochs)
 
 	# Construct igraph object
 	ACTIONet = graph_from_adjacency_matrix(build.out$ACTIONet, mode="undirected", weighted = TRUE)
@@ -174,11 +192,142 @@ run.ACTIONet <- function(sce, k_max = 20, compactness_level = 50, thread_no = 8,
 	return(ACTIONet.out)
 }
 
+filter.ACTIONet.factors <- function(ACTIONet.out, sce, k_max = 20, compactness_level = 50, thread_no = 8, epsilon = 3.0, LC = 1.0, auto_adjust_LC = FALSE, arch.specificity.z = -1, core.z = 3.0, n_epochs = 500, sce.data.attr = "logcounts") {
+	C = ACTIONet.out$ACTION.out$C
+	H = ACTIONet.out$ACTION.out$H
+	
+	k_actual = length(C)
+	if(k_actual <= k_max) {
+		print("Requested k is less than or equal to the max k");
+		return(ACTIONet.out)
+	}
+	
+	ACTION.out = list(C = C[1:k_max], H = H[1:k_max])
+	
+
+	# Reconstruct archetypes in the original space  
+	reconstruct.out = reconstructArchetypes(as(sce@assays[[sce.data.attr]], 'sparseMatrix'), ACTION.out$C, ACTION.out$H, z_threshold = arch.specificity.z)
+	rownames(reconstruct.out$archetype_profile) = rownames(sce)
+
+	# Build ACTIONet
+	build.out = buildAdaptiveACTIONet(H_stacked = reconstruct.out$H_stacked, thread_no = thread_no, LC = LC, auto_adjust_LC = auto_adjust_LC, epsilon = epsilon)
+
+	# Layout ACTIONet
+	vis.out = layoutACTIONet(build.out$ACTIONet, S_r = t(sce@reducedDims[["S_r"]]), compactness_level = compactness_level, n_epochs = n_epochs)
+
+	# Construct igraph object
+	ACTIONet = graph_from_adjacency_matrix(build.out$ACTIONet, mode="undirected", weighted = TRUE)
+	coor = vis.out$coordinates;
+	coor3D = vis.out$coordinates_3D
+	V(ACTIONet)$x = coor[, 1]
+	V(ACTIONet)$y = coor[, 2]
+	V(ACTIONet)$x3D = coor3D[, 1]
+	V(ACTIONet)$y3D = coor3D[, 2]
+	V(ACTIONet)$z3D = coor3D[, 3]
+	V(ACTIONet)$color = rgb(vis.out$colors)
+
+	arch.Lab = t(reconstruct.out$C_stacked) %*% grDevices::convertColor(color= vis.out$colors, from = 'sRGB', to = 'Lab')
+	arch.colors = rgb(grDevices::convertColor(color=arch.Lab, from = 'Lab', to = 'sRGB'))
+	arch.coordinates = t(reconstruct.out$C_stacked) %*% vis.out$coordinates
+	arch.coordinates_3D = t(reconstruct.out$C_stacked) %*% vis.out$coordinates_3D
+	arch.vis.out = list(colors = arch.colors, coordinates = arch.coordinates, coordinates_3D = arch.coordinates_3D)
+
+	ACTIONet.out = list(ACTION.out = ACTION.out, reconstruct.out = reconstruct.out, build.out = build.out, vis.out = vis.out, ACTIONet = ACTIONet, arch.vis.out = arch.vis.out)
+
+	# Add signature profile
+	signature.profile = construct.signature.profile(sce = sce, ACTIONet.out = ACTIONet.out) 
+	ACTIONet.out$signature.profile = signature.profile
+		
+	core.out = identify.core.archetypes(ACTIONet.out, core.z)
+	H.core = runsimplexRegression(t(sce@reducedDims[["S_r"]]) %*% ACTIONet.out$reconstruct.out$C_stacked[, core.out$core.archs], t(sce@reducedDims[["S_r"]]))
+	core.out$H = H.core	
+	ACTIONet.out$core.out = core.out
+	
+	return(ACTIONet.out)
+}
+
+reconstruct.ACTIONet <- function(ACTIONet.out, sce, compactness_level = 50, thread_no = 8, epsilon = 3.0, LC = 1.0, auto_adjust_LC = FALSE, n_epochs = 500) {	  
+	if( !("S_r" %in% names(sce@reducedDims)) ) {
+		print("Please provide reduced sce with S_r slot")
+		return(ACTIONet.out)
+	}
+	# Build ACTIONet
+	build.out = buildAdaptiveACTIONet(H_stacked = ACTIONet.out$reconstruct.out$H_stacked, thread_no = thread_no, LC = LC, auto_adjust_LC = auto_adjust_LC, epsilon = epsilon)
+	#build.out = ACTIONet.out$build.out
+	
+	# Layout ACTIONet
+	vis.out = layoutACTIONet(build.out$ACTIONet, S_r = t(sce@reducedDims[["S_r"]]), compactness_level = compactness_level, n_epochs = n_epochs)
+
+	# Construct igraph object
+	ACTIONet = graph_from_adjacency_matrix(build.out$ACTIONet, mode="undirected", weighted = TRUE)
+	coor = vis.out$coordinates;
+	coor3D = vis.out$coordinates_3D
+	V(ACTIONet)$x = coor[, 1]
+	V(ACTIONet)$y = coor[, 2]
+	V(ACTIONet)$x3D = coor3D[, 1]
+	V(ACTIONet)$y3D = coor3D[, 2]
+	V(ACTIONet)$z3D = coor3D[, 3]
+	V(ACTIONet)$color = rgb(vis.out$colors)
+
+	arch.Lab = t(ACTIONet.out$reconstruct.out$C_stacked) %*% grDevices::convertColor(color= vis.out$colors, from = 'sRGB', to = 'Lab')
+	arch.colors = rgb(grDevices::convertColor(color=arch.Lab, from = 'Lab', to = 'sRGB'))
+	arch.coordinates = t(ACTIONet.out$reconstruct.out$C_stacked) %*% vis.out$coordinates
+	arch.coordinates_3D = t(ACTIONet.out$reconstruct.out$C_stacked) %*% vis.out$coordinates_3D
+	arch.vis.out = list(colors = arch.colors, coordinates = arch.coordinates, coordinates_3D = arch.coordinates_3D)
+
+	ACTIONet.out$build.out = build.out
+	ACTIONet.out$vis.out = vis.out
+	ACTIONet.out$ACTIONet = ACTIONet
+	ACTIONet.out$arch.vis.out = arch.vis.out
+	
+	return(ACTIONet.out)
+}
+
+rerun.layout <- function(ACTIONet.out, sce, compactness = 50) {
+	require(igraph)
+	require(ACTIONet)
+
+	# Layout ACTIONet
+	vis.out = layoutACTIONet(ACTIONet.out$build.out$ACTIONet, S_r = t(sce@reducedDims[["S_r"]]), compactness_level = compactness, n_epochs = 500)
+	ACTIONet.out$vis.out = vis.out
+	
+	# Construct igraph object
+	ACTIONet = ACTIONet.out$ACTIONet
+	coor = vis.out$coordinates;
+	coor3D = vis.out$coordinates_3D
+	V(ACTIONet)$x = coor[, 1]
+	V(ACTIONet)$y = coor[, 2]
+	V(ACTIONet)$x3D = coor3D[, 1]
+	V(ACTIONet)$y3D = coor3D[, 2]
+	V(ACTIONet)$z3D = coor3D[, 3]
+	V(ACTIONet)$color = rgb(vis.out$colors)
+	ACTIONet.out$ACTIONet = ACTIONet
+	
+	arch.Lab = t(ACTIONet.out$reconstruct.out$C_stacked) %*% grDevices::convertColor(color= vis.out$colors, from = 'sRGB', to = 'Lab')
+	arch.colors = rgb(grDevices::convertColor(color=arch.Lab, from = 'Lab', to = 'sRGB'))
+	arch.coordinates = t(ACTIONet.out$reconstruct.out$C_stacked) %*% vis.out$coordinates
+	arch.coordinates_3D = t(ACTIONet.out$reconstruct.out$C_stacked) %*% vis.out$coordinates_3D
+	arch.vis.out = list(colors = arch.colors, coordinates = arch.coordinates, coordinates_3D = arch.coordinates_3D)
+
+	ACTIONet.out$arch.vis.out = arch.vis.out
+	
+	return(ACTIONet.out)
+}
+
+prune.ACTIONet <- function(ACTIONet.out, z.threshold = -1) {
+	cn = coreness(ACTIONet.out$ACTIONet)
+	z = scale(cn)
+	filtered.cells = which(z < z.threshold)
+	ACTIONet.out = remove.cells(ACTIONet.out, filtered.cells)
+}
+
 annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_val = 0.9, rand.sample.no = 100, thread_no = 8) {
 	require(ACTIONet)
 	require(igraph)
 	require(Matrix)
 	require(stringr)
+	
+	rownames(sce) = toupper(rownames(sce))
 	
 	GS.names = names(marker.genes)
 	if(is.null(GS.names)) {
@@ -199,14 +348,14 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 			df = data.frame(Gene = c(pos.genes, neg.genes), Direction = c(rep(+1, length(pos.genes)), rep(-1, length(neg.genes))), Celltype= celltype)
 		}
 	}))
-	markers.table = markers.table[toupper(markers.table$Gene) %in% toupper(rownames(sce)), ]
+	markers.table = markers.table[markers.table$Gene %in% rownames(sce), ]
 	if(dim(markers.table)[1] == 0) {
 		print("No markers are left")
 		return()
 	}
 
-	rows = match(toupper(markers.table$Gene), toupper(rownames(sce)))
-	if(length(markers.table$Gene) < 100) { # PageRank-based imputation
+	rows = match(markers.table$Gene, rownames(sce))
+	if(length(unique(markers.table$Gene)) < 200) { # PageRank-based imputation
 		print("Using PageRank for imptation of marker genes")
 		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, markers.table$Gene, alpha_val, thread_no, prune = FALSE)
 	} else { # PCA-based imputation

@@ -44,6 +44,8 @@ map.clusters <- function(Labels, clusters) {
 }
 
 impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, thread_no = 8, prune = FALSE, rescale = TRUE, expr.slot = "logcounts") {
+	require(igraph)
+	
 	genes = unique(genes)
 	
 	if(is.igraph(ACTIONet.out))
