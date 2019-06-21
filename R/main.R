@@ -1,9 +1,9 @@
-reduce.sce <- function(sce, reduced_dim = 50, max.iter = 5, normalize = TRUE) {
+reduce.sce <- function(sce, reduced_dim = 50, max.iter = 5) {
 	require(scran)
 	require(scater)
 	require(ACTIONet)
 
-	if(normalize) {
+	if( !("logcounts" %in% names(sce@assays)) ) {
 		sce.norm = sce    
 		A = as(sce@assays[["counts"]], 'dgTMatrix')
 		cs = Matrix::colSums(A)    
@@ -357,7 +357,7 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 	rows = match(markers.table$Gene, rownames(sce))
 	if(length(unique(markers.table$Gene)) < 200) { # PageRank-based imputation
 		print("Using PageRank for imptation of marker genes")
-		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, markers.table$Gene, alpha_val, thread_no, prune = FALSE)
+		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, markers.table$Gene, alpha_val, thread_no, prune = FALSE, rescale = FALSE)
 	} else { # PCA-based imputation
 		print("Using archImpute for imptation of marker genes")
 		imputed.marker.expression = t(ACTIONet.out$signature.profile[rows, ACTIONet.out$core.out$core.archs] %*% ACTIONet.out$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])

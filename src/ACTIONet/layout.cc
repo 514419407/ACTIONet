@@ -28,6 +28,8 @@ namespace ACTIONetcore {
 		  (*it) = 1.0 - (*it);
 		}
 		*/			
+		printf("Running layout with: compactness=%d, # epochs = %d\n", compactness_level, n_epochs);
+		
 		G.for_each( [](sp_mat::elem_type& val) { val = 1.0 - val; } );
 		
 		G = smoothKNN(G, thread_no);

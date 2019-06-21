@@ -166,7 +166,7 @@ namespace ACTION {
 	}
 
 
-	void gram_schmidt(mat& A) {
+	void my_orth(mat& A) {
 		for(uword i = 0; i < A.n_cols; ++i) {
 			for(uword j = 0; j < i; ++j) {
 				double r = dot(A.col(i), A.col(j));
@@ -187,13 +187,9 @@ namespace ACTION {
 
 	Projection reducedKernel(sp_mat &profile, int PCA_dim, int iter = 3, int seed = 0) {			
 		int n = profile.n_rows;
-		//profile = normalise(profile, 2);    
-
-		Projection projection;		
+		profile = normalise(profile, 2);    
 
 		printf("\tRunning ACTION+PCA. Matrix size: %d x %d\n", profile.n_rows, profile.n_cols); fflush(stdout);
-
-		mat A, B;
 		
 		// Update 1: Orthogonalize columns w.r.t. background (mean)
 		vec mu = vec(mean(profile, 1));
@@ -207,9 +203,8 @@ namespace ACTION {
 		vec a2 = ones(profile.n_rows);
 		vec b2 = -(a1_mean*b1 + c);
 
-		A = join_rows(a1, a2);
-		B = join_rows(b1, b2);
-
+		mat A = join_rows(a1, a2);
+		mat B = join_rows(b1, b2);
 		
 		printf("\tPerform SVD on the original matrix\n"); fflush(stdout);
 		field<mat> SVD_results = frSVD(profile, PCA_dim, iter, seed);	
@@ -218,8 +213,6 @@ namespace ACTION {
 		vec s = SVD_results(1);
 		mat V = SVD_results(2);
 		
-
-//		printf("U: %d x %d, V = %d x %d, s = %d\n", U.n_rows, U.n_cols, V.n_rows, V.n_cols, s.n_elem);
 		printf("\tUpdate SVD ..."); fflush(stdout);
 		vec s_prime;
 		mat U_prime, V_prime;
@@ -227,14 +220,14 @@ namespace ACTION {
 		mat M = U.t()*A; 
 		mat A_ortho_proj = A - U*M;   
 		mat P = A_ortho_proj;// = orth(A_ortho_proj);
-		gram_schmidt(P);		
+		my_orth(P);		
 		mat R_P = P.t()*A_ortho_proj;
 		
 		
 		mat N = V.t()*B; 
 		mat B_ortho_proj = B - V*N; 
 		mat Q = B_ortho_proj; //orth(B_ortho_proj); 
-		gram_schmidt(Q);
+		my_orth(Q);
 		mat R_Q = Q.t()*B_ortho_proj;	
 		
 		mat K1 = zeros(s.n_elem+A.n_cols, s.n_elem+A.n_cols);
@@ -254,6 +247,7 @@ namespace ACTION {
 		printf("done.\n"); fflush(stdout);
 		
 		
+		Projection projection;		
 		projection.S_r = trans(V_updated.cols(0, PCA_dim-1));
 		for(int i = 0; i < PCA_dim; i++) {
 			projection.S_r.row(i) *= s_prime(i);

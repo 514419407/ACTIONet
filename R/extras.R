@@ -43,7 +43,7 @@ map.clusters <- function(Labels, clusters) {
   return(updated.Labels)
 }
 
-impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, thread_no = 8, prune = FALSE, rescale = TRUE, expr.slot = "logcounts") {
+impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, thread_no = 8, prune = FALSE, rescale = FALSE, expr.slot = "logcounts") {
 	require(igraph)
 	
 	genes = unique(genes)
@@ -66,14 +66,25 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 	if(! (expr.slot %in% names(sce@assays)) ) {
 		R.utils::printf('%s is not in assays of sce\n', expr.slot)
 	}
-	raw.gene.expression = Matrix::t(as(sce@assays[[expr.slot]][matched.idx, ], 'dgTMatrix'))
-	U = raw.gene.expression
-	U[U < 0] = 0
-	cs = Matrix::colSums(U)
-	cs[cs == 0] = 1
-	U = as.matrix(Matrix::sparseMatrix(i = U@i+1, j = U@j+1, x = U@x / cs[U@j+1], dims = dim(U)))
-		
+	
+	if(length(matched.idx) > 1) {
+		raw.gene.expression = Matrix::t(as(sce@assays[[expr.slot]][matched.idx, ], 'dgTMatrix'))
+		U = raw.gene.expression
+		U[U < 0] = 0
+		cs = Matrix::colSums(U)
+		U = as.matrix(Matrix::sparseMatrix(i = U@i+1, j = U@j+1, x = U@x / cs[U@j+1], dims = dim(U)))
+		U = U[, cs > 0]
+		gg = matched.genes[cs > 0]
+	}
+	else {
+		U = matrix(sce@assays[[expr.slot]][matched.idx, ])
+		if(sum(U) > 0)
+			return()
+		gg = matched.genes
+	}	
+	
 	imputed.gene.expression = batchPR(G, U, alpha_val, thread_no)
+	imputed.gene.expression[is.na(imputed.gene.expression)] = 0
 	
 	# Prune values
 	if(prune == TRUE) {
@@ -109,7 +120,7 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 		})
 	}
 	
-	colnames(imputed.gene.expression) = matched.genes
+	colnames(imputed.gene.expression) = gg
 		
 	return(imputed.gene.expression)
 }

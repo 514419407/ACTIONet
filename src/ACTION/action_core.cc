@@ -5,6 +5,8 @@ namespace ACTION {
 	void simplexRegression(double *A_ptr, int A_cols, double *B_ptr, int B_rows, int B_cols, double *X_ptr);
 	void AA (double *A_ptr, int A_rows, int A_cols, double *W0_ptr, int W0_cols, double *C_ptr, double *H_ptr);
 
+	Projection orthoPCA(sp_mat &profile, int PCA_dim, int iter, int seed);
+
 	Projection reduceGeneExpression(sp_mat &expression, int reduced_dim = DEFAULT_PCA_DIM, int method = ACTIONplusPCA, int iter = 10) {
 		printf("Reducing expression matrix\n");
 		Projection projection;
@@ -13,7 +15,8 @@ namespace ACTION {
 			case ACTIONplusPCA:	// Uses dense formulation
 			{
 				printf("\tReduce expression matrix using orthogonalization followed by PCA (k = %d) using sparse formulation ... \n", reduced_dim); fflush(stdout);
-				projection = reducedKernel(expression, reduced_dim, iter, 1365);		
+				projection = reducedKernel(expression, reduced_dim, iter, 1365);				
+
 				printf("done\n"); fflush(stdout);
 				
 			}

@@ -311,8 +311,7 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 	require(ACTIONet)
 	require(viridis)
 	require(ggpubr)
-	
-	
+		
 	if(!sum(sapply(marker.genes, length) != 1) & is.null(names(marker.genes))) {
 		names(marker.genes) = marker.genes
 	}
@@ -325,9 +324,8 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 	rare.genes = all.marker.genes[perc < 5]
 	abundant.genes = setdiff(all.marker.genes, rare.genes)
 
-	
 	if(length(rare.genes) > 0) {
-		imputed.marker.expression.shallow = impute.genes.using.ACTIONet(ACTIONet.out, sce, rare.genes, 0.85, thread_no, prune = FALSE, rescale = FALSE)
+		imputed.marker.expression.shallow = impute.genes.using.ACTIONet(ACTIONet.out, sce, rare.genes, 0.85, thread_no, prune = FALSE)
 		if(length(abundant.genes) > 0) {
 			imputed.marker.expression.deep = impute.genes.using.ACTIONet(ACTIONet.out, sce, abundant.genes, 0.95, thread_no, prune = FALSE)
 			
@@ -351,6 +349,7 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 	}
 	
 	lapply(all.marker.genes, function(gene) {
+		print(gene)
 		if(! (gene %in% colnames(imputed.marker.expression)) )
 			return()
 			
@@ -384,6 +383,7 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 		nnz.mask = x > 0
 		
 		y = x[nnz.mask]
+		#s = y / max(y)
 		s = y / quantile(y, 0.9)
 		s[s > 1] = 1
 		
