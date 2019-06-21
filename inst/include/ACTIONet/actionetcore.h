@@ -91,7 +91,7 @@ namespace ACTIONetcore {
 	};	
 
 	field<sp_mat> buildACTIONet(mat &H_stacked, int kNN, int thread_no);
-	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC, double epsilon, int thread_no);
+	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC, double epsilon, int thread_no, bool auto_adjust_LC);
 
 	mat computeFullDist(mat &H_stacked, int thread_no, int verbose);
 	sp_mat computeNearestDist(mat &H_stacked, int kNN, int thread_no);

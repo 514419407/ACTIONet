@@ -219,14 +219,14 @@ namespace ACTIONetcore {
 
 
 	// k^{*}-Nearest Neighbors: From Global to Local (NIPS 2016)
-	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, double epsilon = 0.0, int thread_no=4)	{
+	field<sp_mat> buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, double epsilon = 0.0, int thread_no=4, bool auto_adjust_LC = false) {
 
-		printf("Building adaptive ACTIONet\n");
+		printf("Building adaptive ACTIONet (Eps = %.2f, LC = %.2f, Auto adjust LC = %d)\n", epsilon, LC, auto_adjust_LC);
 
 		H_stacked.transform( [](double val) { return (val < 0?0:val); } );
 		H_stacked = normalise(H_stacked, 1, 0); // make the norm (sum) of each column 1			
 
-		double kappa = 3.0;
+		double kappa = 5.0;
 		int sample_no = H_stacked.n_cols;		
 		int kNN = min(sample_no-1, (int)(kappa*round(sqrt(sample_no)))); // start with uniform k=sqrt(N) ["Pattern Classification" book by Duda et al.]
 
@@ -268,62 +268,87 @@ namespace ACTIONetcore {
 
 		
 		dist = clamp(dist, 0.0, 1.0); 
+		idx = clamp(idx, 0, sample_no - 1);
 		
-		
-		mat beta = LC*dist;
-		vec beta_sum = zeros(sample_no);
-		vec beta_sq_sum = zeros(sample_no);
-		
-		mat lambda = zeros(size(beta));
-		lambda.col(0) = datum::inf*ones(sample_no);
-		
-		register int k;
-		for(k = 1; k <= kNN; k++) {
-			beta_sum += beta.col(k);
-			beta_sq_sum += square(beta.col(k));
+		printf("\tConstructing adaptive-nearest neighbor graph ... \n");
+		mat Delta;
+		do {
+			mat beta = LC*dist;
+			vec beta_sum = zeros(sample_no);
+			vec beta_sq_sum = zeros(sample_no);
 			
-			lambda.col(k) = (1.0/(double)k) * ( beta_sum + sqrt(k + square(beta_sum) - k*beta_sq_sum) );
-		}
-		lambda.replace(datum::nan, 0); 
-		
-		sp_mat D(sample_no, sample_no);
-		
-		//# pragma omp parallel for num_threads(thread_no) 
-		lambda = trans(lambda);
-		vec node_lambda = zeros(sample_no);
-		beta = trans(beta);
-		for(int v = 0; v < sample_no; v++) {
-			vec delta = lambda.col(v) - beta.col(v);			
+			mat lambda = zeros(size(beta));
+			lambda.col(0) = datum::inf*ones(sample_no);
+			
+			register int k;
+			for(k = 1; k <= kNN; k++) {
+				beta_sum += beta.col(k);
+				beta_sq_sum += square(beta.col(k));
+				
+				lambda.col(k) = (1.0/(double)k) * ( beta_sum + sqrt(k + square(beta_sum) - k*beta_sq_sum) );
+			}
+			lambda.replace(datum::nan, 0); 
+			
+			
+			lambda = trans(lambda);
+			vec node_lambda = zeros(sample_no);
+			beta = trans(beta);
 
-			//printf("sum = %.2f, len = %d, idx = %d\n", sum(delta < 0), shift_idx.n);
-			uvec shift_idx = find(delta <= 0, 1, "first");
-			int neighbor_no = shift_idx.n_elem == 0?(kNN):(shift_idx(0)-1);
 			
-			//node_lambda(v) = lambda(neighbor_no, v);
+			Delta = lambda - beta;			
+			int saturated_vertices = (int)(sum(sum(Delta < 0) == 0));
+			if(auto_adjust_LC && saturated_vertices > round(0.005*H_stacked.n_cols)) {
+				LC *= 1.1;
+				printf("\t\t# saturated vertices = %d. Increasing LC to %.2f\n", saturated_vertices, LC);
+			}
+			else {
+				break;
+			}
+		} while(1);
+		
+		
+		sp_mat G(sample_no, sample_no);		
+//		# pragma omp parallel for shared(G) num_threads(thread_no)
+		for(int v = 0; v < sample_no; v++) {				
+			vec delta = Delta.col(v);		
+					
+			//uvec rows = find(delta > 0, 1, "last");
+			uvec rows = find(delta <= 0, 1, "first");
 			
-			rowvec v_idx  = idx.row(v);
-			rowvec v_dist = dist.row(v); // Shall we use lambda instead?			
-			//vec v_dist = lambda(neighbor_no) - beta(span(0, neighbor_no), v);
-			//v_dist /= max(v_dist);
-			for (int i = 1; i <= neighbor_no; i++) {				
-				int src = v_idx(i)-1;
-				int dst = v;
-
-				D(src, dst) = v_dist(i);
+			int neighbor_no = kNN;
+			if(rows.n_elem != 0)
+				neighbor_no = rows(0);
+			
+			
+			int dst = v;								
+			rowvec v_dist = dist.row(v);
+			rowvec v_idx = idx.row(v) - 1;
+			for (int i = 1; i < neighbor_no; i++) {				
+				int src = v_idx(i);
+					
+				G(src, dst) = 1.0 - v_dist(i);
 			}
 		}
+		printf("\tdone\n");
 		
+
 		
-		// Old method of computing similarities
-		sp_mat G = D;
-		for(sp_mat::iterator it = G.begin(); it != G.end(); ++it) {
-		  (*it) = 1.0 - (*it);
-		}					
+		printf("\tFinalizing network ... ");
+		G.replace(datum::nan, 0);  // replace each NaN with 0
+
+		sp_mat Gt = trans(G);		
+		//sp_mat G_sym = (G + Gt);
+		//G_sym.for_each( [](sp_mat::elem_type& val) { val /= 2.0; } );
+		sp_mat G_sym = sqrt(G % Gt);
 		
+		sp_mat G_asym = normalise(G, 1, 0);
 		
 		field<sp_mat> output(2);
-		output(0) = sqrt(G % trans(G));
-		output(1) = normalise(G, 1, 0);
+		//output(0) = ;
+		output(0) =	G_sym;
+		output(1) = G_asym;
+		
+		printf("done\n");
 		
 		return(output);		
 	}
@@ -338,6 +363,8 @@ namespace ACTIONetcore {
 		#pragma omp parallel for num_threads(thread_no) 			
 		for(int i = 0; i < nV; i++) {
 			sp_mat v = D.col(i);
+			if(v.n_nonzero == 0)
+				continue;
 			
 			vec vals = nonzeros(v);	
 			if(vals.n_elem == 0)

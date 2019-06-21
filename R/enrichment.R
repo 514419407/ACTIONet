@@ -90,28 +90,30 @@ HGT_tail <- function(population.size, success.count, sample.size, observed.succe
   return(log.tail_bound)
 }
 
-geneset.Enrichment.gProfiler <- function(genes, top.terms = 10, col = "tomato", organism = "hsapiens") {
-  require(gProfileR)
-  require(ggpubr)
-  
-  terms = gprofiler(genes, ordered_query = FALSE, hier_filtering = 'none', exclude_iea=FALSE, correction_method='fdr', src_filter = c('GO:BP'), organism = organism)
-  
-  terms$logPval = -log10(terms$p.value)
+geneset.enrichment.gProfiler <- function(genes, top.terms = 10, col = "tomato", organism = "hsapiens") {
+	require(gProfileR)
+	require(ggpubr)
+
+	terms = gprofiler(genes, ordered_query = FALSE, hier_filtering = 'none', exclude_iea=FALSE, correction_method='fdr', src_filter = c('GO:BP'), organism = organism)
+
+	terms$logPval = -log10(terms$p.value)
 
 
-  too.long = which(sapply(terms$term.name, function(x) stringr::str_length(x)) > 50)
-  terms = terms[-too.long,]
+	too.long = which(sapply(terms$term.name, function(x) stringr::str_length(x)) > 50)
+	terms = terms[-too.long,]
 
-  terms = terms[order(terms$logPval, decreasing = TRUE),]
+	terms = terms[order(terms$logPval, decreasing = TRUE),]
 
 
-    p = ggbarplot(terms[1:min(top.terms, sum(terms$logPval > 2)), ], x="term.name", y="logPval", sort.val = "asc", orientation = "horiz", fill=col, xlab = "", ylab="") + geom_hline(yintercept = -log10(0.05), col="gray", lty=2)
-    
-    plot(p)    
+	p = ggbarplot(terms[1:min(top.terms, sum(terms$logPval > 2)), ], x="term.name", y="logPval", sort.val = "asc", orientation = "horiz", fill=col, xlab = "", ylab="") + geom_hline(yintercept = -log10(0.05), col="gray", lty=2)
+
+	plot(p)    
 
 }
 
-geneset.Enrichment <- function(signature.profile, genesets, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|MT-') {
+archetype.geneset.enrichment <- function(ACTIONet.out, genesets) {
+	signature.profile = ACTIONet.out$signature.profile
+	
 	if(is.null(rownames(signature.profile))) {
 		print("Rows of the signature profile have to be named with genes.")
 	}
@@ -126,9 +128,6 @@ geneset.Enrichment <- function(signature.profile, genesets, blacklist.pattern = 
 		ind.mat = genesets
 	}
 	common.genes = intersect(rownames(signature.profile), rownames(ind.mat))
-	
-	filtered.genes = common.genes[grep(blacklist.pattern, toupper(common.genes))]
-	common.genes = setdiff(common.genes, filtered.genes)
 	
 	idx = match(common.genes, rownames(signature.profile))
 	signature.profile = signature.profile[idx, ]

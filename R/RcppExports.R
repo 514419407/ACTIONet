@@ -29,19 +29,19 @@ set_seed <- function(seed) {
     invisible(.Call(`_ACTIONet_set_seed`, seed))
 }
 
-computeFullDist <- function(H_stacked, thread_no = 4L, verbose = 1L) {
+computeFullDist <- function(H_stacked, thread_no = 8L, verbose = 1L) {
     .Call(`_ACTIONet_computeFullDist`, H_stacked, thread_no, verbose)
 }
 
-computeNearestDist <- function(H_stacked, kNN, thread_no = 4L) {
+computeNearestDist <- function(H_stacked, kNN, thread_no = 8L) {
     .Call(`_ACTIONet_computeNearestDist`, H_stacked, kNN, thread_no)
 }
 
-smoothKNN <- function(D, thread_no = 4L) {
+smoothKNN <- function(D, thread_no = 8L) {
     .Call(`_ACTIONet_smoothKNN`, D, thread_no)
 }
 
-computeNearestDist_edgeList <- function(H_stacked, kNN, thread_no = 4L) {
+computeNearestDist_edgeList <- function(H_stacked, kNN, thread_no = 8L) {
     .Call(`_ACTIONet_computeNearestDist_edgeList`, H_stacked, kNN, thread_no)
 }
 
@@ -49,8 +49,8 @@ buildACTIONet <- function(H_stacked, kNN = 30L, thread_no = 8L) {
     .Call(`_ACTIONet_buildACTIONet`, H_stacked, kNN, thread_no)
 }
 
-buildAdaptiveACTIONet <- function(H_stacked, LC = 1.0, epsilon = 0.0, thread_no = 8L) {
-    .Call(`_ACTIONet_buildAdaptiveACTIONet`, H_stacked, LC, epsilon, thread_no)
+buildAdaptiveACTIONet <- function(H_stacked, LC = 1.0, epsilon = 0.0, thread_no = 8L, auto_adjust_LC = FALSE) {
+    .Call(`_ACTIONet_buildAdaptiveACTIONet`, H_stacked, LC, epsilon, thread_no, auto_adjust_LC)
 }
 
 layoutACTIONet <- function(G, S_r, compactness_level = 1.0, n_epochs = 500L, thread_no = 8L) {

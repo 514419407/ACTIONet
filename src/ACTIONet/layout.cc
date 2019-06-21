@@ -23,9 +23,14 @@ namespace ACTIONetcore {
 		mat initial_coordinates = S_r.rows(regspace<uvec>(0, 1));		
 		
 		// Convert back from similarity to distance, and then smooth them using the UMAP framework
+		/*
 		for(sp_mat::iterator it = G.begin(); it != G.end(); ++it) {
 		  (*it) = 1.0 - (*it);
-		}			
+		}
+		*/			
+		printf("Running layout with: compactness=%d, # epochs = %d\n", compactness_level, n_epochs);
+		
+		G.for_each( [](sp_mat::elem_type& val) { val = 1.0 - val; } );
 		
 		G = smoothKNN(G, thread_no);
 

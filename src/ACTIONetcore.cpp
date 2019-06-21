@@ -22,7 +22,7 @@ void set_seed(double seed) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-mat computeFullDist(mat &H_stacked, int thread_no = 4, int verbose = 1) {  	
+mat computeFullDist(mat &H_stacked, int thread_no = 8, int verbose = 1) {  	
     mat D = ACTIONetcore::computeFullDist(H_stacked, thread_no, verbose);
     
     return D;
@@ -31,7 +31,7 @@ mat computeFullDist(mat &H_stacked, int thread_no = 4, int verbose = 1) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-sp_mat computeNearestDist(mat &H_stacked, double kNN, int thread_no = 4) {  
+sp_mat computeNearestDist(mat &H_stacked, double kNN, int thread_no = 8) {  
     sp_mat D = ACTIONetcore::computeNearestDist(H_stacked, kNN, thread_no);
     
     return D;
@@ -40,7 +40,7 @@ sp_mat computeNearestDist(mat &H_stacked, double kNN, int thread_no = 4) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-sp_mat smoothKNN(sp_mat D, int thread_no = 4) {  
+sp_mat smoothKNN(sp_mat D, int thread_no = 8) {  
     sp_mat G = ACTIONetcore::smoothKNN(D, thread_no);
     
     return G;
@@ -48,7 +48,7 @@ sp_mat smoothKNN(sp_mat D, int thread_no = 4) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-List computeNearestDist_edgeList(mat &H_stacked, double kNN, int thread_no = 4) {  	
+List computeNearestDist_edgeList(mat &H_stacked, double kNN, int thread_no = 8) {  	
     field<mat> NN = ACTIONetcore::computeNearestDist_edgeList(H_stacked, kNN, thread_no);
     
 	List out_list;		
@@ -73,9 +73,9 @@ List buildACTIONet(mat &H_stacked, int kNN = 30, int thread_no = 8) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-List buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, double epsilon = 0.0, int thread_no = 8) {  
+List buildAdaptiveACTIONet(mat &H_stacked, double LC = 1.0, double epsilon = 0.0, int thread_no = 8, bool auto_adjust_LC = false) {  
 		
-    field<sp_mat> res = ACTIONetcore::buildAdaptiveACTIONet(H_stacked, LC, epsilon, thread_no);
+    field<sp_mat> res = ACTIONetcore::buildAdaptiveACTIONet(H_stacked, LC, epsilon, thread_no, auto_adjust_LC);
 
 	List out_list;		
 	out_list["ACTIONet"] = res(0);

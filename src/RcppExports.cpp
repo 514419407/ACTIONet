@@ -160,8 +160,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // buildAdaptiveACTIONet
-List buildAdaptiveACTIONet(mat& H_stacked, double LC, double epsilon, int thread_no);
-RcppExport SEXP _ACTIONet_buildAdaptiveACTIONet(SEXP H_stackedSEXP, SEXP LCSEXP, SEXP epsilonSEXP, SEXP thread_noSEXP) {
+List buildAdaptiveACTIONet(mat& H_stacked, double LC, double epsilon, int thread_no, bool auto_adjust_LC);
+RcppExport SEXP _ACTIONet_buildAdaptiveACTIONet(SEXP H_stackedSEXP, SEXP LCSEXP, SEXP epsilonSEXP, SEXP thread_noSEXP, SEXP auto_adjust_LCSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -169,7 +169,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type LC(LCSEXP);
     Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
     Rcpp::traits::input_parameter< int >::type thread_no(thread_noSEXP);
-    rcpp_result_gen = Rcpp::wrap(buildAdaptiveACTIONet(H_stacked, LC, epsilon, thread_no));
+    Rcpp::traits::input_parameter< bool >::type auto_adjust_LC(auto_adjust_LCSEXP);
+    rcpp_result_gen = Rcpp::wrap(buildAdaptiveACTIONet(H_stacked, LC, epsilon, thread_no, auto_adjust_LC));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -386,7 +387,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_smoothKNN", (DL_FUNC) &_ACTIONet_smoothKNN, 2},
     {"_ACTIONet_computeNearestDist_edgeList", (DL_FUNC) &_ACTIONet_computeNearestDist_edgeList, 3},
     {"_ACTIONet_buildACTIONet", (DL_FUNC) &_ACTIONet_buildACTIONet, 3},
-    {"_ACTIONet_buildAdaptiveACTIONet", (DL_FUNC) &_ACTIONet_buildAdaptiveACTIONet, 4},
+    {"_ACTIONet_buildAdaptiveACTIONet", (DL_FUNC) &_ACTIONet_buildAdaptiveACTIONet, 5},
     {"_ACTIONet_layoutACTIONet", (DL_FUNC) &_ACTIONet_layoutACTIONet, 5},
     {"_ACTIONet_reconstructArchetypes", (DL_FUNC) &_ACTIONet_reconstructArchetypes, 4},
     {"_ACTIONet_extractArchetypeAssociatedSamples", (DL_FUNC) &_ACTIONet_extractArchetypeAssociatedSamples, 3},
