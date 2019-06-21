@@ -295,11 +295,18 @@ namespace ACTIONetcore {
 			beta = trans(beta);
 
 			
-			Delta = lambda - beta;			
-			int saturated_vertices = (int)(sum(sum(Delta < 0) == 0));
-			if(auto_adjust_LC && saturated_vertices > round(0.005*H_stacked.n_cols)) {
+			Delta = lambda - beta;		
+
+/*
+			vec saturation = sum(Delta < 0)
+			vec saturation_sgn = saturation.transform( [](double val) { return (val == 0? 1:0; } );			
+			double saturated_vertices = sum(saturation_sgn);
+			*/
+			vec saturation_mask = conv_to<vec>::from(sum(Delta < 0) == 0);
+			double saturated_vertices_count = (double)sum(saturation_mask);
+			if(auto_adjust_LC && saturated_vertices_count > round(0.01*H_stacked.n_cols)) {
 				LC *= 1.1;
-				printf("\t\t# saturated vertices = %d. Increasing LC to %.2f\n", saturated_vertices, LC);
+				printf("\t\t# saturated vertices = %.1f. Increasing LC to %.2f\n", saturated_vertices_count, LC);
 			}
 			else {
 				break;
