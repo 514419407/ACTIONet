@@ -157,17 +157,6 @@ impute.geneset.activity <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, t
 }
 
 
-
-cluster.ACTIONet <- function(ACTIONet.out, resolution = 1.0, method = "ModularityVertexPartition") {
-	library(leiden)
-	
-	clusters <- leiden(ACTIONet.out$build.out$ACTIONet, resolution_parameter = resolution, partition_type = method)
-	
-	return(clusters)	
-}
-
-
-
 infer.missing.Labels <- function(ACTIONet.out, Labels) {	
 	require(igraph)
 	
