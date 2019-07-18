@@ -43,6 +43,7 @@ map.clusters <- function(Labels, clusters) {
   return(updated.Labels)
 }
 
+
 impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, thread_no = 8, prune = FALSE, rescale = FALSE, expr.slot = "logcounts") {
 	require(igraph)
 	
@@ -76,14 +77,17 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 		U = U[, cs > 0]
 		gg = matched.genes[cs > 0]
 	}
-	else {
-		U = matrix(sce@assays[[expr.slot]][matched.idx, ])
-		if(sum(U) > 0)
-			return()
+	else {		
+		raw.gene.expression = matrix(sce@assays[[expr.slot]][matched.idx, ])
+		U = raw.gene.expression / sum(raw.gene.expression)
 		gg = matched.genes
 	}	
 	
+	#clusters = cluster.ACTIONet(ACTIONet.out)
+	#imputed.gene.expression = zoned_diffusion(ACTIONet.out$build.out$ACTIONet, clusters, U, alpha = 0.95)
+	
 	imputed.gene.expression = batchPR(G, U, alpha_val, thread_no)
+	
 	imputed.gene.expression[is.na(imputed.gene.expression)] = 0
 	
 	# Prune values
@@ -105,8 +109,8 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 			x = raw.gene.expression[, col]
 			y = imputed.gene.expression[, col]
 			
-			x.Q = quantile(x, 0.99)
-			y.Q = quantile(y, 0.99)
+			x.Q = max(x, 1)
+			y.Q = quantile(y, 1)
 
 			if(y.Q == 0) {
 				return(array(0, length(x)))
@@ -223,18 +227,19 @@ prop.Labels <- function(ACTIONet.out, Labels, max_it = 3) {
 }
 
 update.Labels <- function(ACTIONet.out, Labels) {
-
+	set.seed(0)	
+	
 	if(is.igraph(ACTIONet.out))
 		ACTIONet = ACTIONet.out
 	else
 		ACTIONet = ACTIONet.out$ACTIONet
-	
+
 	if(is.character(Labels))
 		Labels = factor(Labels, levels = sort(unique(Labels)))
-	
+
 	require(igraph)
 	require(Matrix)
-	
+
 	cl.out = cluster_label_prop(ACTIONet, initial = as.numeric(Labels))
 	clusters = cl.out$membership
 
@@ -242,11 +247,40 @@ update.Labels <- function(ACTIONet.out, Labels) {
 
 	while(sum(is.na(updated.Labels)) > 0)
 		updated.Labels = infer.missing.Labels(ACTIONet, updated.Labels)
-	
-	
+
+
 	updated.Labels = factor(updated.Labels, levels = levels(Labels))
 
-	return(updated.Labels) 
+	return(updated.Labels)
+	
+	
+	# if(is.igraph(ACTIONet.out))
+	# 	ACTIONet = ACTIONet.out
+	# else
+	# 	ACTIONet = ACTIONet.out$ACTIONet
+	# 
+	# if(is.character(Labels)) {
+	# 	initial.clusters = match(Labels, sort(unique(Labels))) - 1
+	# } else if(is.factor(Labels)) {
+	# 	initial.clusters = as.numeric(Labels)-1
+	# } else if(is.numeric(Labels)) {
+	# 	initial.clusters = Labels - min(Labels)
+	# }
+	# 
+	# G = get.adjacency(ACTIONet, attr = "weight")
+	# clusters = unsigned_cluster(G, resolution_parameter, seed, initial.clusters)
+	# 
+	# updated.Labels = map.clusters(Labels, clusters)
+	# 
+	# while(sum(is.na(updated.Labels)) > 0)
+	# 	updated.Labels = infer.missing.Labels(ACTIONet, updated.Labels)
+	# 
+	# 
+	# updated.Labels = factor(updated.Labels, levels = levels(Labels))
+	# 
+	# return(updated.Labels) 
+	
+	
 }
 
 annotate.archetype <- function(ACTIONet.out, Labels, rand_perm_no = 1000) {
@@ -269,9 +303,10 @@ annotate.archetype <- function(ACTIONet.out, Labels, rand_perm_no = 1000) {
 	return(out.list)
 }
 
-
-cluster.ACTIONet <- function(ACTIONet.out, resolution_parameter = 1.0) {
-	clusters = unsigned_cluster(ACTIONet.out$build.out$ACTIONet, resolution_parameter)
-	
-	return(clusters)
+orthoProject <- function(A, S) {
+  A = scale(A)
+  S = scale(S)
+  A_r = A - S %*% MASS::ginv(t(S) %*% S) %*% (t(S)%*%A)
+  A_r = scale(A_r)
+  return(A_r)
 }

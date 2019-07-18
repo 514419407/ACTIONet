@@ -309,6 +309,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// zoned_diffusion
+mat zoned_diffusion(sp_mat& G, uvec& zones, mat& U, double alpha, int thread_no, double tol);
+RcppExport SEXP _ACTIONet_zoned_diffusion(SEXP GSEXP, SEXP zonesSEXP, SEXP USEXP, SEXP alphaSEXP, SEXP thread_noSEXP, SEXP tolSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< sp_mat& >::type G(GSEXP);
+    Rcpp::traits::input_parameter< uvec& >::type zones(zonesSEXP);
+    Rcpp::traits::input_parameter< mat& >::type U(USEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< int >::type thread_no(thread_noSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(zoned_diffusion(G, zones, U, alpha, thread_no, tol));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sweepcut
 vec sweepcut(sp_mat& A, vec s);
 RcppExport SEXP _ACTIONet_sweepcut(SEXP ASEXP, SEXP sSEXP) {
@@ -334,28 +350,30 @@ BEGIN_RCPP
 END_RCPP
 }
 // signed_cluster
-vec signed_cluster(sp_mat A, double resolution_parameter, int seed);
-RcppExport SEXP _ACTIONet_signed_cluster(SEXP ASEXP, SEXP resolution_parameterSEXP, SEXP seedSEXP) {
+vec signed_cluster(sp_mat A, double resolution_parameter, int seed, Nullable<IntegerVector> initial_clusters_);
+RcppExport SEXP _ACTIONet_signed_cluster(SEXP ASEXP, SEXP resolution_parameterSEXP, SEXP seedSEXP, SEXP initial_clusters_SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< sp_mat >::type A(ASEXP);
     Rcpp::traits::input_parameter< double >::type resolution_parameter(resolution_parameterSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(signed_cluster(A, resolution_parameter, seed));
+    Rcpp::traits::input_parameter< Nullable<IntegerVector> >::type initial_clusters_(initial_clusters_SEXP);
+    rcpp_result_gen = Rcpp::wrap(signed_cluster(A, resolution_parameter, seed, initial_clusters_));
     return rcpp_result_gen;
 END_RCPP
 }
 // unsigned_cluster
-vec unsigned_cluster(sp_mat A, double resolution_parameter, int seed);
-RcppExport SEXP _ACTIONet_unsigned_cluster(SEXP ASEXP, SEXP resolution_parameterSEXP, SEXP seedSEXP) {
+vec unsigned_cluster(sp_mat A, double resolution_parameter, int seed, Nullable<IntegerVector> initial_clusters_);
+RcppExport SEXP _ACTIONet_unsigned_cluster(SEXP ASEXP, SEXP resolution_parameterSEXP, SEXP seedSEXP, SEXP initial_clusters_SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< sp_mat >::type A(ASEXP);
     Rcpp::traits::input_parameter< double >::type resolution_parameter(resolution_parameterSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(unsigned_cluster(A, resolution_parameter, seed));
+    Rcpp::traits::input_parameter< Nullable<IntegerVector> >::type initial_clusters_(initial_clusters_SEXP);
+    rcpp_result_gen = Rcpp::wrap(unsigned_cluster(A, resolution_parameter, seed, initial_clusters_));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -370,6 +388,33 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type u_threshold(u_thresholdSEXP);
     Rcpp::traits::input_parameter< double >::type v_threshold(v_thresholdSEXP);
     rcpp_result_gen = Rcpp::wrap(Rank1_matching(u, v, u_threshold, v_threshold));
+    return rcpp_result_gen;
+END_RCPP
+}
+// constructBackbone
+List constructBackbone(mat arch_profile_reduced, double weight_threshold, double pval_threshold, double lambda, int thread_no);
+RcppExport SEXP _ACTIONet_constructBackbone(SEXP arch_profile_reducedSEXP, SEXP weight_thresholdSEXP, SEXP pval_thresholdSEXP, SEXP lambdaSEXP, SEXP thread_noSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< mat >::type arch_profile_reduced(arch_profile_reducedSEXP);
+    Rcpp::traits::input_parameter< double >::type weight_threshold(weight_thresholdSEXP);
+    Rcpp::traits::input_parameter< double >::type pval_threshold(pval_thresholdSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< int >::type thread_no(thread_noSEXP);
+    rcpp_result_gen = Rcpp::wrap(constructBackbone(arch_profile_reduced, weight_threshold, pval_threshold, lambda, thread_no));
+    return rcpp_result_gen;
+END_RCPP
+}
+// make_spanner
+sp_mat make_spanner(sp_mat& G, int k);
+RcppExport SEXP _ACTIONet_make_spanner(SEXP GSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< sp_mat& >::type G(GSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    rcpp_result_gen = Rcpp::wrap(make_spanner(G, k));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -398,11 +443,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ACTIONet_phenotypeEnrichment", (DL_FUNC) &_ACTIONet_phenotypeEnrichment, 3},
     {"_ACTIONet_MWM", (DL_FUNC) &_ACTIONet_MWM, 1},
     {"_ACTIONet_batchPR", (DL_FUNC) &_ACTIONet_batchPR, 5},
+    {"_ACTIONet_zoned_diffusion", (DL_FUNC) &_ACTIONet_zoned_diffusion, 6},
     {"_ACTIONet_sweepcut", (DL_FUNC) &_ACTIONet_sweepcut, 2},
     {"_ACTIONet_mergeArchetypes", (DL_FUNC) &_ACTIONet_mergeArchetypes, 2},
-    {"_ACTIONet_signed_cluster", (DL_FUNC) &_ACTIONet_signed_cluster, 3},
-    {"_ACTIONet_unsigned_cluster", (DL_FUNC) &_ACTIONet_unsigned_cluster, 3},
+    {"_ACTIONet_signed_cluster", (DL_FUNC) &_ACTIONet_signed_cluster, 4},
+    {"_ACTIONet_unsigned_cluster", (DL_FUNC) &_ACTIONet_unsigned_cluster, 4},
     {"_ACTIONet_Rank1_matching", (DL_FUNC) &_ACTIONet_Rank1_matching, 4},
+    {"_ACTIONet_constructBackbone", (DL_FUNC) &_ACTIONet_constructBackbone, 5},
+    {"_ACTIONet_make_spanner", (DL_FUNC) &_ACTIONet_make_spanner, 2},
     {NULL, NULL, 0}
 };
 

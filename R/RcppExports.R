@@ -93,6 +93,10 @@ batchPR <- function(G, U, alpha = 0.85, thread_no = 8L, tol = 1e-6) {
     .Call(`_ACTIONet_batchPR`, G, U, alpha, thread_no, tol)
 }
 
+zoned_diffusion <- function(G, zones, U, alpha = 0.85, thread_no = 8L, tol = 1e-6) {
+    .Call(`_ACTIONet_zoned_diffusion`, G, zones, U, alpha, thread_no, tol)
+}
+
 sweepcut <- function(A, s) {
     .Call(`_ACTIONet_sweepcut`, A, s)
 }
@@ -101,15 +105,23 @@ mergeArchetypes <- function(C_stacked, H_stacked) {
     .Call(`_ACTIONet_mergeArchetypes`, C_stacked, H_stacked)
 }
 
-signed_cluster <- function(A, resolution_parameter = 1.0, seed = 0L) {
-    .Call(`_ACTIONet_signed_cluster`, A, resolution_parameter, seed)
+signed_cluster <- function(A, resolution_parameter = 1.0, seed = 0L, initial_clusters_ = NULL) {
+    .Call(`_ACTIONet_signed_cluster`, A, resolution_parameter, seed, initial_clusters_)
 }
 
-unsigned_cluster <- function(A, resolution_parameter = 1.0, seed = 0L) {
-    .Call(`_ACTIONet_unsigned_cluster`, A, resolution_parameter, seed)
+unsigned_cluster <- function(A, resolution_parameter = 1.0, seed = 0L, initial_clusters_ = NULL) {
+    .Call(`_ACTIONet_unsigned_cluster`, A, resolution_parameter, seed, initial_clusters_)
 }
 
 Rank1_matching <- function(u, v, u_threshold = 0, v_threshold = 0) {
     .Call(`_ACTIONet_Rank1_matching`, u, v, u_threshold, v_threshold)
+}
+
+constructBackbone <- function(arch_profile_reduced, weight_threshold = 0, pval_threshold = 0.05, lambda = -1, thread_no = 8L) {
+    .Call(`_ACTIONet_constructBackbone`, arch_profile_reduced, weight_threshold, pval_threshold, lambda, thread_no)
+}
+
+make_spanner <- function(G, k) {
+    .Call(`_ACTIONet_make_spanner`, G, k)
 }
 

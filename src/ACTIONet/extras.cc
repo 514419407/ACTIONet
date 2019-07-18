@@ -61,6 +61,88 @@ vec pagerank_scaled(sp_mat &G, vec u_vec, double alpha = 0.85, double tol = 1e-6
 }
 
 namespace ACTIONetcore {
+	mat batch_zoned_diffusion(sp_mat &G, uvec &zones, mat &U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {
+		mat ZonedDiff = zeros(size(U));
+		
+		if(U.n_rows != G.n_rows) {
+			fprintf(stderr, "batch_zoned_diffusion:: Number of rows in U doesn't match with the number of vertices in G\n");
+			return(ZonedDiff);
+		}
+		U.transform( [](double val) { return (val < 0? 0:val); } );
+		U = normalise(U, 1);
+		
+		G.diag().zeros();
+		
+		uvec uz = unique(zones);					
+		uvec vertex_id(size(zones));	
+		for(int i = 0; i < uz.n_elem; i++) {
+			uvec idx = find(zones == uz(i));
+
+			for(int j = 0; j < idx.n_elem; j++) {
+				vertex_id(idx(j)) = j;
+			}
+					
+			sp_mat subG(idx.n_elem, idx.n_elem);
+			
+			sp_mat::iterator it     = G.begin();
+			sp_mat::iterator it_end = G.end();
+			for(; it != it_end; ++it) {
+				if( (zones(it.row()) != uz(i)) || (zones(it.col()) != uz(i)) )
+					continue;
+				
+				int ii = vertex_id(it.row());
+				int jj = vertex_id(it.col());
+
+				subG(ii, jj) = subG(jj, ii) = (*it);
+			}
+			
+			prpack::prpack_base_graph g(&subG);		
+			g.normalize_weights(); 
+			prpack::prpack_solver solver(&g, false);
+
+			
+			#pragma omp parallel for num_threads(thread_no) 			
+			for(int k = 0; k < U.n_cols; k++) {
+				vec init_pr = U.col(k);
+				//double total_max = max(init_pr);
+				
+				uvec indices = sort_index(init_pr);
+				int q_idx = indices[floor(init_pr.n_elem*0.95)];
+				double total_q = init_pr[q_idx];
+				
+				vec sub_init_pr = normalise(init_pr(idx), 1);
+				double* u = new double[sub_init_pr.size()];
+				memcpy(u, sub_init_pr.memptr(), sub_init_pr.size()*sizeof(double));
+				double* v = u;
+			
+				const prpack::prpack_result* res = solver.solve(alpha, tol, u, v, "");
+											
+				vec pr(res->x, res->num_vs);
+				pr.replace(datum::nan, 0);
+
+				vec sub_pr = init_pr(idx);
+				uvec sub_indices = sort_index(sub_pr);
+				int sub_q_idx = sub_indices[floor(sub_pr.n_elem*0.95)];
+				double sub_q = sub_pr[sub_q_idx];
+
+
+				double scale_factor = sub_q / total_q;
+				vec x = ZonedDiff.col(k);
+				x(idx) = scale_factor*pr / pr.n_elem;
+				ZonedDiff.col(k) = x;
+			}
+			
+		}
+
+		ZonedDiff = normalise(ZonedDiff, 1);
+		return(ZonedDiff);	
+	}
+
+
+	
+	
+	
+	
 	mat batchPR(sp_mat &G, mat &U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {
 		
 		prpack::prpack_base_graph g(&G);		
@@ -73,7 +155,6 @@ namespace ACTIONetcore {
 		mat PR = zeros(size(U));
 		
 		
-		printf("Running PageRank on %d vectors\n", U.n_cols);
 		#pragma omp parallel for num_threads(thread_no) 			
 		for(int i = 0; i < U.n_cols; i++) {			
 			vec u_vec = U.col(i);

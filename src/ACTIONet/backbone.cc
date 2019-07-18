@@ -161,7 +161,7 @@ namespace ACTIONetcore {
 		}
 		all_cells = unique(all_cells);
 		
-		printf("Computing distances between cells\n");
+		printf("Computing distances between %d influential cells\n", all_cells.n_elem);
 		mat subH = H_stacked.cols(all_cells);		
 		mat subD = computeFullDist(subH, 1, 0);		
 

@@ -283,12 +283,12 @@ reconstruct.ACTIONet <- function(ACTIONet.out, sce, compactness_level = 50, thre
 	return(ACTIONet.out)
 }
 
-rerun.layout <- function(ACTIONet.out, sce, compactness = 50) {
+rerun.layout <- function(ACTIONet.out, sce, compactness = 50, init.slot = "S_r") {
 	require(igraph)
 	require(ACTIONet)
 
 	# Layout ACTIONet
-	vis.out = layoutACTIONet(ACTIONet.out$build.out$ACTIONet, S_r = t(sce@reducedDims[["S_r"]]), compactness_level = compactness, n_epochs = 500)
+	vis.out = layoutACTIONet(ACTIONet.out$build.out$ACTIONet, S_r = t(sce@reducedDims[[init.slot]]), compactness_level = compactness, n_epochs = 500)
 	ACTIONet.out$vis.out = vis.out
 	
 	# Construct igraph object
@@ -321,7 +321,7 @@ prune.ACTIONet <- function(ACTIONet.out, z.threshold = -1) {
 	ACTIONet.out = remove.cells(ACTIONet.out, filtered.cells)
 }
 
-annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_val = 0.9, rand.sample.no = 100, thread_no = 8) {
+annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_val = 0.9, rand.sample.no = 100, thread_no = 8, imputation = "PageRank") {
 	require(ACTIONet)
 	require(igraph)
 	require(Matrix)
@@ -355,12 +355,12 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 	}
 
 	rows = match(markers.table$Gene, rownames(sce))
-	if(length(unique(markers.table$Gene)) < 200) { # PageRank-based imputation
+	if(imputation == "PageRank") { # PageRank-based imputation
 		print("Using PageRank for imptation of marker genes")
 		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, markers.table$Gene, alpha_val, thread_no, prune = FALSE, rescale = FALSE)
 	} else { # PCA-based imputation
 		print("Using archImpute for imptation of marker genes")
-		imputed.marker.expression = t(ACTIONet.out$signature.profile[rows, ACTIONet.out$core.out$core.archs] %*% ACTIONet.out$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])
+		imputed.marker.expression = t(ACTIONet.out$signature.profile[rows, ACTIONet.out$core.out$core.archs] %*% ACTIONet.out$core.out$H)
 	}
 	colnames(imputed.marker.expression) = toupper(colnames(imputed.marker.expression))
 	
@@ -402,9 +402,12 @@ annotate.cells.using.markers <- function(ACTIONet.out, sce, marker.genes, alpha_
 	return(out.list)
 }
 
-remove.cells <- function(ACTIONet.out, filtered.cells) {	
+remove.cells <- function(ACTIONet.out, filtered.cells, force = FALSE) {	
 	core.cells = which(rowSums(ACTIONet.out$reconstruct.out$C_stacked) > 0)
-	selected.cells = sort(unique(union(core.cells, setdiff(1:dim(ACTIONet.out$reconstruct.out$C_stacked)[1], filtered.cells))))
+	if(!force)
+		selected.cells = sort(unique(union(core.cells, setdiff(1:dim(ACTIONet.out$reconstruct.out$C_stacked)[1], filtered.cells))))
+	else
+		selected.cells = sort(unique(core.cells))
 
 	ACTIONet.out.pruned = ACTIONet.out
 
@@ -439,3 +442,70 @@ remove.cells <- function(ACTIONet.out, filtered.cells) {
 	return(ACTIONet.out.pruned)
 }
 
+
+
+cluster.ACTIONet <- function(ACTIONet.out, resolution_parameter = 1.0, arch.init =TRUE, thread_no = 8) {
+	if(arch.init == TRUE) {
+		U = ACTIONet.out$reconstruct.out$C_stacked[, ACTIONet.out$core.out$core.archs]
+		U.smoothed = batchPR(ACTIONet.out$build.out$ACTIONet, U, thread_no = thread_no)
+		
+		initial.clusters = apply(U.smoothed, 1, which.max)
+		
+		initial.clusters.updated = cluster_label_prop(ACTIONet.out$ACTIONet, initial = initial.clusters)$membership
+		initial.clusters.updated = match(initial.clusters.updated, sort(unique(initial.clusters.updated))) - 1
+		
+		clusters = unsigned_cluster(ACTIONet.out$build.out$ACTIONet, resolution_parameter, 0, initial.clusters.updated)
+	} else {
+		clusters = unsigned_cluster(ACTIONet.out$build.out$ACTIONet, resolution_parameter, 0)
+	}
+	
+	counts = table(clusters)
+	clusters[clusters %in% as.numeric(names(counts)[counts < 10])] = NA
+	clusters = as.numeric(infer.missing.Labels(ACTIONet.out, clusters))
+	
+	clusters = factor(clusters, as.character(sort(unique(clusters))))
+
+	return(clusters)
+}
+
+construct.sparse.backbone <- function(ACTIONet.out, reduction.slot = "S_r", stretch.factor = 10) {
+	core.index = ACTIONet.out$core.out$core.archs 
+
+	# Construct core-backbone
+	#X = ACTIONet.out$reconstruct.out$C_stacked[, core.index]
+	X = t(ACTIONet.out$reconstruct.out$H_stacked[core.index, ])
+	
+	mat = t(reducedDims(sce)[[reduction.slot]]) %*% X
+	
+	#mat = t(ACTIONet.out_ACTION$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])
+	#mat = orthoProject(mat, Matrix::rowMeans(mat))
+	
+	backbone = cor(mat)
+		
+	backbone[backbone < 0] = 0
+	diag(backbone) = 0
+
+	backbone.graph = graph_from_adjacency_matrix(backbone, mode = "undirected", weighted = TRUE)
+
+	# Construct t-spanner
+	t = (2*stretch.factor-1)
+
+	d = 1 - E(backbone.graph)$weight
+	EL = get.edgelist(backbone.graph, names = FALSE)
+	perm = order(d, decreasing = FALSE)
+
+	backbone.graph.sparse = delete.edges(backbone.graph, E(backbone.graph))
+	for(i in 1:length(d)) {
+		u = EL[perm[i], 1]
+		v = EL[perm[i], 2]
+		sp = distances(backbone.graph.sparse, v = u, to = v)[1, 1]
+
+		if(sp > t*d[perm[i]]) {
+			backbone.graph.sparse = add.edges(backbone.graph.sparse, EL[perm[i], ], attr = list(weight = 1 - d[perm[i]]))
+		}
+	}
+
+	backbone.graph = backbone.graph.sparse
+	
+	return(backbone.graph)
+}

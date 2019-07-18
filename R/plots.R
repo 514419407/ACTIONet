@@ -1,3 +1,34 @@
+mycircle <- function(coords, v=NULL, params) {
+  library(igraph)
+  
+  vertex.color <- params("vertex", "color")
+  if (length(vertex.color) != 1 && !is.null(v)) {
+    vertex.color <- vertex.color[v]
+  }
+  vertex.size  <- 1/200 * params("vertex", "size")
+  if (length(vertex.size) != 1 && !is.null(v)) {
+    vertex.size <- vertex.size[v]
+  }
+  vertex.frame.color <- params("vertex", "frame.color")
+  if (length(vertex.frame.color) != 1 && !is.null(v)) {
+    vertex.frame.color <- vertex.frame.color[v]
+  }
+  vertex.frame.width <- params("vertex", "frame.width")
+  if (length(vertex.frame.width) != 1 && !is.null(v)) {
+    vertex.frame.width <- vertex.frame.width[v]
+  }
+  
+  mapply(coords[,1], coords[,2], vertex.color, vertex.frame.color,
+         vertex.size, vertex.frame.width,
+         FUN=function(x, y, bg, fg, size, lwd) {
+           symbols(x=x, y=y, bg=bg, fg=fg, lwd=lwd,
+                   circles=size, add=TRUE, inches=FALSE)
+         })
+}
+add.vertex.shape("fcircle", clip=igraph.shape.noclip,
+		 plot=mycircle, parameters=list(vertex.frame.color=1,
+                                  vertex.frame.width=1))
+
 plot.ACTIONet <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA, size.attr = NA, cex = 1, CPal = "Dark2", legend.pos = "bottomright") {
 	require(ggplot2)
 	require(ggpubr)
@@ -11,27 +42,84 @@ plot.ACTIONet <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA,
 	coor = cbind(V(ACTIONet)$x, V(ACTIONet)$y)
 
 
+	Annot = NA
 	if(is.numeric(color.attr)) {
-		v = sort(unique(color.attr))
-		Annot = as.character(v)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
-		vCol = Pal[color.attr]
+		color.attr = as.character(color.attr)
+		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
+		Annot = levels(color.attr)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
 	}
 	else if(is.factor(color.attr)) {
 		Annot = levels(color.attr)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	} 
+	else if(is.character(color.attr)) {
+		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
+		Annot = levels(color.attr)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	if(length(Annot) > 1) {
+		vCol = Pal[color.attr]
+	} else {
+		vCol = V(ACTIONet)$color
+	}		
+
+
+	if(is.numeric(color.attr)) {
+		v = sort(unique(color.attr))
+		if(length(v) < 30) {
+			Annot = as.character(v)
+			if(is.list(CPal)) {
+				Pal = CPal[1:length(Annot)]
+			} else {
+				Pal = ggpubr::get_palette(CPal, length(Annot))
+			}
+			names(Pal) = Annot
+			vCol = Pal[color.attr]
+		}
+	}
+	else if(is.factor(color.attr)) {
+		Annot = levels(color.attr)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
 		vCol = Pal[color.attr]
 	} 
 	else if(is.character(color.attr)) {
 		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
 		Annot = levels(color.attr)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
 		vCol = Pal[color.attr]
 	}
 	else {
 		vCol = V(ACTIONet)$color
 		Annot = NA
 	}		
+
 
 	HSV = rgb2hsv(col2rgb(vCol))
 	HSV[3, ] = HSV[3, ]*0.7
@@ -55,9 +143,10 @@ plot.ACTIONet <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA,
 }
 
 
-plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA, size.attr = NA, cex = 2, CPal = "d3", legend.pos = "bottomright") {
+plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA, size.attr = NA, cex = 2, trans.fact = 2.0, size.fact = 2.0, CPal = "d3", legend.pos = "bottomright") {
 	require(ggplot2)
 	require(ggpubr)
+	require(igraph)
 	
 	if(is.igraph(ACTIONet.out))
 		ACTIONet = ACTIONet.out
@@ -67,58 +156,116 @@ plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.att
 	nV = length(V(ACTIONet))
 	coor = cbind(V(ACTIONet)$x, V(ACTIONet)$y)
 
-
+	Annot = NA
 	if(is.numeric(color.attr)) {
-		v = sort(unique(color.attr))
-		Annot = as.character(v)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
-		vCol = Pal[color.attr]
+		color.attr = as.character(color.attr)
+		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
+		Annot = levels(color.attr)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
 	}
 	else if(is.factor(color.attr)) {
 		Annot = levels(color.attr)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
-		vCol = Pal[color.attr]
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
 	} 
 	else if(is.character(color.attr)) {
 		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
 		Annot = levels(color.attr)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	if(length(Annot) > 1) {
 		vCol = Pal[color.attr]
-	}
-	else {
+	} else {
 		vCol = V(ACTIONet)$color
-		Annot = NA
 	}		
 
-	
 	HSV = rgb2hsv(col2rgb(vCol))
-	HSV[3, ] = HSV[3, ]*0.7
-	vCol.border = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
-
+	HSV[3, ] = HSV[3, ]*0.9
+	vCol.border = vCol #apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
+	
 	if(is.numeric(transparency.attr)) {
-		trans.factor = 1 / ( 1+ exp(-scale(transparency.attr)) )
+		z = (transparency.attr - median(transparency.attr)) / mad(transparency.attr)		
+		trans.factor = 1 / ( 1+ exp(-trans.fact*z) )
 		trans.factor = trans.factor ^ 2
+
+		#beta = 1 - (transparency.attr - min(transparency.attr)) / (max(transparency.attr) - min(transparency.attr))
 		
-		vCol = ggplot2::alpha(vCol, trans.factor)
-		vCol.border = ggplot2::alpha(vCol.border, trans.factor)
+		#vCol = colorspace::lighten(vCol, beta)
+
+		#HSV = rgb2hsv(col2rgb(vCol))
+		#HSV[3, ] = color.spa#((1-HSV[3, ]) *beta + HSV[3, ])
+		
+		#vCol = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
+
+		
+		
+		#RGB = apply(RGB, 2, function(x) (1-beta)*x + beta)
+		#print(dim(RGB))
+		#vCol = rgb(t(RGB))
+		
+				
+		#vCol = ggplot2::alpha(vCol, trans.factor)		
+		#vCol.border = ggplot2::alpha(vCol.border, trans.factor)
+		
+		
+		vCol = scales::alpha(vCol, trans.factor)		
+		vCol.border = scales::alpha(vCol.border, trans.factor)
+		
+		#RGB = col2rgb(vCol) / 255
+		#vCol = sapply(1:length(trans.factor), function(i) rgb(r = RGB[1, i], g = RGB[2, i], b = RGB[3, i], alpha = 1-trans.factor[i], maxColorValue = 1));
+		#print(vCol)
+
+
+		#RGB = col2rgb(vCol.border) / 255
+		#vCol.border = sapply(1:length(trans.factor), function(i) rgb(r = RGB[1, i], g = RGB[2, i], b = RGB[3, i], alpha = 1-trans.factor[i], maxColorValue = 1));
+		
+		#vCol = rgb(RGB, trans.factor, maxColorValue = 1)
+		
 	}
 
-	if(is.numeric(size.attr)) {
-		size.factor = 1 / ( 1+ exp(-scale(transparency.attr)) )
-		size.factor = trans.factor ^ 2
 
-		cex = cex * size.attr
+
+
+	if(is.numeric(size.attr)) {
+		z = (size.attr - median(size.attr)) / mad(size.attr)		
+		size.factor = 1 / ( 1+ exp(-size.fact*z) )
+		size.factor = size.factor ^ 2
+
+
+		cex = cex * size.factor
 		 
 	}
 
 	sketch.graph = ACTIONet
 	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
+
+	V(sketch.graph)$name = ''
 	V(sketch.graph)$size = cex
 	V(sketch.graph)$color = vCol
 	V(sketch.graph)$frame.color = vCol.border
 	
 
-	plot(sketch.graph, vertex.label=NA, layout=coor)
+	if(is.numeric(transparency.attr)) {
+		perm = order(transparency.attr)
+		sketch.graph = permute.vertices(sketch.graph, perm)
+	}
+	
+	plot(sketch.graph)
 	if(length(Annot) > 1) 
 		legend(legend.pos, legend = Annot, fill=Pal, cex = 0.5)
 
@@ -137,27 +284,44 @@ plot.ACTIONet.3D <- function(ACTIONet.out, color.attr = NA, transparency.attr = 
 	nV = length(V(ACTIONet))
 	coor = cbind(V(ACTIONet)$x3D, V(ACTIONet)$y3D, V(ACTIONet)$z3D)
 
+	Annot = NA
 	if(is.numeric(color.attr)) {
-		v = sort(unique(color.attr))
-		Annot = as.character(v)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
-		vCol = Pal[color.attr]
+		color.attr = as.character(color.attr)
+		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
+		Annot = levels(color.attr)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
 	}
 	else if(is.factor(color.attr)) {
 		Annot = levels(color.attr)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
-		vCol = Pal[color.attr]
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot		
 	} 
 	else if(is.character(color.attr)) {
 		color.attr = factor(color.attr, levels = sort(unique(color.attr)))
 		Annot = levels(color.attr)
-		Pal = ggpubr::get_palette(CPal, length(Annot))
-		vCol = Pal[color.attr]
-	}
-	else {
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	if(length(Annot) > 1) {
+		vCol = as.character(Pal[color.attr])
+	} else {
 		vCol = V(ACTIONet)$color
-		Annot = NA
-	}
+	}		
+	
 
 	HSV = rgb2hsv(col2rgb(vCol))
 	HSV[3, ] = HSV[3, ]*0.7
@@ -232,20 +396,153 @@ plot.ACTIONet.gradient <- function(ACTIONet.out, cell.scores, marker.genes, alph
 }
 
 
+plot.ACTIONet.cell.state.map <- function(ACTIONet.out, sce, archetype.labels = NA, stretch.factor = 10, CPal = "d3", cex = 2, node.scale.factor = 3, reduction.slot = "S_r") {
+	# Plot main ACTIONet first
+	sketch.graph = ACTIONet.out$ACTIONet
+	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
+	nV = length(V(sketch.graph))
+
+	V(sketch.graph)$color = 'lightgrey'
+	V(sketch.graph)$size = cex
 
 
-plot.ACTIONet.cell.state.view <- function(ACTIONet.out, cex = 2) {
+	HSV = rgb2hsv(col2rgb(V(sketch.graph)$color))
+	HSV[3, ] = HSV[3, ]*0.8
+	V(sketch.graph)$frame.color = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
+
+	coor = cbind(V(sketch.graph)$x, V(sketch.graph)$y)
+
+	plot(sketch.graph, vertex.label=NA, layout=coor)
+	
+	
+	# Now overlay the core backbone connectome on top
+	core.index = ACTIONet.out$core.out$core.archs 
+	core.coor = ACTIONet.out$arch.vis.out$coordinates[core.index, ]	
+		
+	Annot = NA
+	if(is.numeric(archetype.labels)) {
+		archetype.labels = as.character(archetype.labels)
+		archetype.labels = factor(archetype.labels, levels = sort(unique(archetype.labels)))
+		Annot = levels(archetype.labels)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}
+	else if(is.factor(archetype.labels)) {
+		Annot = levels(archetype.labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	} 
+	else if(is.character(archetype.labels)) {
+		archetype.labels = factor(archetype.labels, levels = sort(unique(archetype.labels)))
+		Annot = levels(archetype.labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	if(length(Annot) > 1) {
+		vCol = Pal[archetype.labels]
+	} else {
+		vCol = ACTIONet.out$arch.vis.out$colors
+	}		
+		
+	core.col = vCol[core.index]
+
+	cs = as.numeric(table(ACTIONet.out$core.out$arch.membership))
+	core.scale.factor = cs / max(cs)
+	core.size = cex*(1 + node.scale.factor*core.scale.factor)
+
+
+	backbone.graph = construct.sparse.backbone(ACTIONet.out, reduction.slot, stretch.factor)
+
+
+	w.scaled = E(backbone.graph)$weight; w.scaled = (w.scaled / max(w.scaled))
+
+	E(backbone.graph)$width = 0.5 + 2.5*w.scaled
+	E(backbone.graph)$color = ggplot2::alpha('black', 0.25 + 0.35*w.scaled)
+	E(backbone.graph)$arrow.size = 0.1
+
+	V(backbone.graph)$color = core.col
+	V(backbone.graph)$size = core.size
+
+	HSV = rgb2hsv(col2rgb(V(backbone.graph)$color))
+	HSV[3, ] = HSV[3, ]*0.8
+	V(backbone.graph)$frame.color = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
+
+
+	plot(backbone.graph, vertex.label=NA, layout=core.coor, add = T)
+	if(!is.na(archetype.labels)) {
+		legend('bottomright', legend = Annot, fill=Pal, cex = 0.5)
+	}	
+}
+
+
+
+plot.ACTIONet.cell.state.view <- function(ACTIONet.out, archetype.labels = NA, CPal = "d3", cex = 2, node.scale.factor = 3) {
 	require(ggplot2)
 	require(ggpubr)
 	
 	sketch.graph = ACTIONet.out$ACTIONet
 	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
-	
-		
+
 	V(sketch.graph)$color = 'lightgrey'
 	V(sketch.graph)$size = cex
+	
 
-	attr = list(color = ACTIONet.out$arch.vis.out$colors[ACTIONet.out$core.out$core.archs], x = ACTIONet.out$arch.vis.out$coordinates[ACTIONet.out$core.out$core.archs, 1], y = ACTIONet.out$arch.vis.out$coordinates[ACTIONet.out$core.out$core.archs, 2], size = rep(cex*1.5, length(ACTIONet.out$core.out$core.archs)))			  
+	Annot = NA
+	if(is.numeric(archetype.labels)) {
+		archetype.labels = as.character(archetype.labels)
+		archetype.labels = factor(archetype.labels, levels = sort(unique(archetype.labels)))
+		Annot = levels(archetype.labels)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}
+	else if(is.factor(archetype.labels)) {
+		Annot = levels(archetype.labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	} 
+	else if(is.character(archetype.labels)) {
+		archetype.labels = factor(archetype.labels, levels = sort(unique(archetype.labels)))
+		Annot = levels(archetype.labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	if(length(Annot) > 1) {
+		vCol = Pal[archetype.labels]
+	} else {
+		vCol = ACTIONet.out$arch.vis.out$colors
+	}		
+
+	ss = as.numeric(table(ACTIONet.out$core.out$arch.membership))
+	ss = ss / max(ss)	
+
+
+	attr = list(color = vCol[ACTIONet.out$core.out$core.archs], x = ACTIONet.out$arch.vis.out$coordinates[ACTIONet.out$core.out$core.archs, 1], y = ACTIONet.out$arch.vis.out$coordinates[ACTIONet.out$core.out$core.archs, 2], size = rep(cex + node.scale.factor*cex*ss, length(ACTIONet.out$core.out$core.archs)))			  
 	sketch.graph = add.vertices(sketch.graph, nv = length(ACTIONet.out$core.out$core.archs), attr = attr)
 
 	HSV = rgb2hsv(col2rgb(V(sketch.graph)$color))
@@ -257,6 +554,9 @@ plot.ACTIONet.cell.state.view <- function(ACTIONet.out, cex = 2) {
 	
 	plot(sketch.graph, vertex.label=NA, layout=coor)
 	
+	if(!is.na(archetype.labels)) {
+		legend('bottomright', legend = Annot, fill=Pal, cex = 0.5)
+	}
 	
 	## Add cell state graph on top
 # 	pcors = suppressWarnings(ppcor::pcor(t(ACTIONet.out$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])))	
@@ -306,7 +606,7 @@ plot.ACTIONet.cell.state.view <- function(ACTIONet.out, cex = 2) {
 }
 
 
-visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CPal = "d3", export_path = NA, thread_no = 8, prune = FALSE, scale.factor = 1) {
+visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 3, CPal = "d3", export_path = NA, thread_no = 8, prune = TRUE, scale.factor = 2) {
 	require(igraph)
 	require(ACTIONet)
 	require(viridis)
@@ -319,6 +619,8 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 	gg = unique(unlist(marker.genes))
 	all.marker.genes = sort(intersect(gg, rownames(sce)))
 
+
+	
 	perc = 100*Matrix::rowSums(sce@assays[["logcounts"]][match(all.marker.genes, rownames(sce)), ] > 0) / dim(sce)[2]
 	
 	rare.genes = all.marker.genes[perc < 5]
@@ -328,23 +630,31 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 		imputed.marker.expression.shallow = impute.genes.using.ACTIONet(ACTIONet.out, sce, rare.genes, 0.85, thread_no, prune = FALSE)
 		if(length(abundant.genes) > 0) {
 			imputed.marker.expression.deep = impute.genes.using.ACTIONet(ACTIONet.out, sce, abundant.genes, 0.95, thread_no, prune = FALSE)
-			
+
 			imputed.marker.expression = cbind(imputed.marker.expression.shallow, imputed.marker.expression.deep)
 		} else {
 			imputed.marker.expression = imputed.marker.expression.shallow
 		}
 	} else if(length(abundant.genes) > 0) {
 		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, abundant.genes, 0.95, thread_no, prune = FALSE)
-	}	
-	# imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, all.marker.genes, alpha_val, thread_no, prune = FALSE)
+	}
 
+
+	#imputed.marker.expression = t(ACTIONet.out$signature.profile[all.marker.genes, ACTIONet.out$core.out$core.archs] %*% ACTIONet.out$core.out$H)
+	
+	#imputed.marker.expression  = t(sce@assays[["logcounts"]][match(all.marker.genes, rownames(sce)), ])
+	#colnames(imputed.marker.expression) = all.marker.genes
 		
 	coor = cbind(V(ACTIONet.out$ACTIONet)$x, V(ACTIONet.out$ACTIONet)$y)
 
 
 	if(!(CPal %in% c("inferno", "magma", "viridis", "BlGrRd"))) {
 		lg = alpha(hsv(h = 0, s = 0, v = 0.99), 0.8)
-		Pal = ggpubr::get_palette(CPal, length(names(marker.genes)))
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(names(marker.genes))]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(names(marker.genes)))
+		}
 		names(Pal) = names(marker.genes)
 	}
 	
@@ -358,52 +668,65 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 
 		if(CPal %in% c("inferno", "magma", "viridis", "BlGrRd")) {
 			Pal_grad = switch(CPal, 
-			"inferno" = inferno(500, alpha = 0.8),
-			"magma" = magma(500, alpha = 0.8),
-			"viridis" = viridis(500, alpha = 0.8),
-			"BlGrRd" = colorRampPalette(c('blue', 'grey', 'red'))(500))
+			"inferno" = inferno(100, alpha = 0.8),
+			"magma" = magma(100, alpha = 0.8),
+			"viridis" = viridis(100, alpha = 0.8),
+			"RdYlBu" = grDevices::colorRampPalette(RColorBrewer::brewer.pal(n = 9, name = "RdYlBu"))(100))
 		} else {
-			Pal_grad = colorRampPalette(c(lg, Pal[celltype.name]), bias = 1)(100)
+			Pal_grad = colorRampPalette(c("white", Pal[[celltype.name]]))(100)
 		}
 		
 		x = imputed.marker.expression[, gene]
 		x[x < 0] = 0
+		x = (x - min(x)) / (max(x) - min(x))
 		
 		if(gene %in% rare.genes) {
 			nnz = round(sum(abs(x)^2)^2 / sum(x^4))
 		} else {
 			nnz = round(sum(abs(x))^2 / sum(x^2))
 		}
-		if(prune == TRUE)
-			x[order(x, decreasing = TRUE)[nnz+1:length(x)]] = 0
 		
-		if(sum(x) == 0)
-			return()
+		#z = (x - median(x)) / #scale(x) 
+		#nnz = sum(z > 1.65)
+		threshold = x[order(x, decreasing = TRUE)[nnz]]
 		
-		nnz.mask = x > 0
+		x = x - threshold
+		x = x / sd(x)
+		s = 1 / (1 + exp(-scale.factor*x))
 		
-		y = x[nnz.mask]
+		#plot(density(s))
+		#if(prune == TRUE)
+		#	x[order(x, decreasing = TRUE)[nnz+1:length(x)]] = 0
+		
+		#if(sum(x) == 0)
+			#return()
+		
+		#nnz.mask = x > 0
+		
+		#y = x[nnz.mask]
 		#s = y / max(y)
-		s = y / quantile(y, 0.9)
-		s[s > 1] = 1
+		#s = y / quantile(y, 0.9)
+		#s[s > 1] = 1
 		
-		s = 1 / (1 + exp(-scale.factor*scale(s)))
+		#s = 1 / (1 + exp(-scale.factor*scale(s)))
 		#s = exp(scale.factor * s)
-		s = s / quantile(s, 0.9)
-		s[s > 1] = 1
+		#s = s / quantile(s, 0.9)
+		#s[s > 1] = 1
 
 		# Default color
-		vCol = rep(alpha(Pal_grad[[1]], 0.5), length(x))
+		#vCol = rep(alpha(Pal_grad[[1]], 0.5), length(s))
 		#vCol[nnz.mask] = scales::col_bin(Pal_grad, domain = NULL, bins = 100)(s)
 		#vCol[nnz.mask] = scales::col_numeric(Pal_grad, domain = NULL)(s)
-		vCol[nnz.mask] = Pal_grad[round(s*length(Pal_grad))]
+		#vCol[nnz.mask] = Pal_grad[round(s*length(Pal_grad))]
+		vCol = scales::col_bin(Pal_grad, domain = NULL, bins = 100)(s)
 		
 		HSV = rgb2hsv(col2rgb(vCol))
-		HSV[3, ] = HSV[3, ]*0.7
+		HSV[3, ] = HSV[3, ]*0.9
 		vCol.border = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
 		
-		cex = rep(0.1*node.size, length(x))		
-		cex[nnz.mask] = node.size*s
+		cex = (s+0.1)*node.size
+		#cex = rep(0.1*node.size, length(x))		
+		#cex[nnz.mask] = node.size*s
 
 
 		plot(coor, pch=21, bg=vCol, col=vCol.border, cex=cex, axes=FALSE, xlab="", ylab="", main = gene);
@@ -419,70 +742,7 @@ visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 2, CP
 }
 
 
-visualize.ADTs <- function(ACTIONet.out, sce, alpha_val = 0.95, node.size = 2, CPal = "inferno", export_path = NA) {
-	require(igraph)
-	require(ACTIONet)
-	require(viridis)
-	require(ggpubr)
-	
-	if(! ('ADT' %in% names(sce@reducedDims)) ) {
-		print("ADT is not a stored in the input sce");
-		return()
-	}
-	
-	G = get.adjacency(ACTIONet.out$ACTIONet, attr = "weight")
-	 
-	U = log(1 + sce@reducedDims[["ADT"]])
-	U = scale(U, center = FALSE, scale = Matrix::colSums(U))
-
-	smoothed.scores = batchPR(G, U, alpha_val, 8)	
-	colnames(smoothed.scores) = colnames(sce@reducedDims[["ADT"]])
-
-	sketch.graph = ACTIONet.out$ACTIONet
-	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
-	V(sketch.graph)$size = 2.5
-	coor = cbind(V(sketch.graph)$x, V(sketch.graph)$y)
-
-	
-	V(sketch.graph)$size = node.size
-	lapply(colnames(smoothed.scores), function(Ab) {
-
-		Pal_grad = switch(CPal, 
-		"inferno" = inferno(500, alpha = 0.5),
-		"magma" = magma(500, alpha = 0.5),
-		"viridis" = viridis(500, alpha = 0.5),
-		"BlGrRd" = colorRampPalette(c('blue', 'grey', 'red'))(500))
-		
-		x = smoothed.scores[, Ab]
-
-		nnz = sum(x^2)^2/sum(x^4)
-		perm = order(x, decreasing = TRUE)
-		mask = (1:length(perm)) %in% perm[1:nnz]
-		
-		#mask = LFR[, gene] > LFR.threshold
-		
-		u = array(0, length(x))
-		u[mask] = scale(x[mask]) #1 / (1 + exp(-0.5*scale(x[mask])))
-
-
-		V(sketch.graph)$color[mask] = scales::col_bin(Pal_grad, domain = NULL, bins = 100)(u[mask])
-		V(sketch.graph)$color[!mask] =  Pal_grad[[1]]
-
-
-		V(sketch.graph)$frame.color = V(sketch.graph)$color#apply(HSV, 2, function(v) 
-		plot(sketch.graph, vertex.label=NA, layout=coor, main = sprintf('%s', Ab))
-
-		if(!is.na(export_path)) {
-			fname = sprintf('%s/ADT_%s.pdf', export_path, Ab);
-			pdf(fname)
-			plot(sketch.graph, vertex.label=NA, layout=coor, main = gene)
-			dev.off()
-		}
-	})
-}
-
-
-plot.ACTIONet.gene.view <- function(ACTIONet.out, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP') {
+plot.ACTIONet.gene.view <- function(ACTIONet.out, sce, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP|MALAT1|B2M') {
 	signature.profile = ACTIONet.out$signature.profile[, ACTIONet.out$core.out$core.archs]
 
 	filtered.row.mask = grepl(blacklist.pattern, toupper(rownames(sce)))
@@ -492,7 +752,8 @@ plot.ACTIONet.gene.view <- function(ACTIONet.out, top.gene.count = 10, blacklist
 
 
 	selected.genes = sort(unique(as.character(sorted.top.genes)))
-
+	
+		
 	arch.RGB = col2rgb(ACTIONet.out$arch.vis.out$colors[ACTIONet.out$core.out$core.archs]) / 256;
 	arch.Lab = grDevices::convertColor(color= t(arch.RGB), from = 'sRGB', to = 'Lab')
 
@@ -571,45 +832,13 @@ plot.ACTIONet.phenotype.view <- function(ACTIONet.out, phenotype.scores) {
 
 
 
-plot.ACTIONet.gene.view.heatmap <- function(ACTIONet.out, arch.Labels, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP') {
-	signature.profile = ACTIONet.out$signature.profile[, ACTIONet.out$core.out$core.archs]
-
-	filtered.row.mask = grepl(blacklist.pattern, toupper(rownames(sce)))
-	signature.profile = signature.profile[!filtered.row.mask, ]
-
-	sorted.top.genes = apply(signature.profile, 2, function(x) rownames(signature.profile)[order(x, decreasing = TRUE)[1:top.gene.count]])
-	selected.genes = sort(unique(as.character(sorted.top.genes)))
-
-	X = signature.profile[selected.genes, ]
-	colnames(X) = arch.Labels[ACTIONet.out$core.out$core.archs]
-	X = X[, order(arch.Labels[ACTIONet.out$core.out$core.archs])]
-	
-	
-	IDX = split(1:dim(X)[2], colnames(X))
-	X = X[order(apply(sapply(IDX, function(idx) Matrix::rowMeans(X[, idx])), 1, which.max)), ]
-	
-	Z = X #t(scale(t(scale(X))))
-	
-	require(ComplexHeatmap)
-	Pal = ggpubr::get_palette("d3", length(levels(arch.Labels)))
-	names(Pal) = levels(arch.Labels)
-
-	ha_column = HeatmapAnnotation(df = data.frame(celltype = colnames(Z)), col = list(celltype = Pal), width = unit(0.5, "cm"), annotation_legend_param = list(celltype=list(title_gp = gpar(fontsize = 8), labels_gp = gpar(fontsize = 5))))
-
-
-	ht_list = ComplexHeatmap::Heatmap(Z, row_names_gp = gpar(fontsize =8), column_names_gp = gpar(fontsize = 0), top_annotation = ha_column, cluster_columns = FALSE, name = 'Expression (scaled)')
-
-	draw(ht_list, heatmap_legend_side = "right", annotation_legend_side = "left")
-
-}
-
 # define utility function to adjust fill-opacity using css
 fillOpacity <- function(., alpha = 0.5) {
   css <- sprintf("<style> .js-fill { fill-opacity: %s !important; } </style>", alpha)
   prependContent(., HTML(css))
 }
 
-plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP', marker.per.cell = 5, node.size = 2, CPal = "Spectral", show.legend = TRUE, annotate.cells = FALSE, opacity = 1.0, title = 'ACTIONet') {
+plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP|MALAT1|B2M', marker.per.cell = 5, node.size = 2, CPal = "Spectral", show.legend = TRUE, annotate.cells = TRUE, opacity = 1.0, title = 'ACTIONet') {
 	
 	require(plotly)
 	require(ACTIONet)
@@ -656,9 +885,41 @@ plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch
 	node.data$size = node.size
 
 	axis <- list(title = "", showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
+
+
+	if(is.numeric(labels)) {
+		labels = as.character(labels)
+		labels = factor(labels, levels = sort(unique(labels)))
+		Annot = levels(labels)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}
+	else if(is.factor(labels)) {
+		Annot = levels(labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	} 
+	else {
+		labels = factor(labels, levels = sort(unique(labels)))
+		Annot = levels(labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	#vCol = Pal[labels]
 	
-	Pal = ggpubr::get_palette(CPal, length(levels(labels)))
-	names(Pal) = levels(labels)		
 	node.data$type = labels
 	network <- plot_ly(node.data, x = ~x, y = ~y, opacity = opacity, color = ~type, colors = Pal, marker = list(size = ~size, opacity = 1.0, alpha = 1, line = list(width = 0.1*node.size, alpha = 0.5, color = 'rgb(0, 0, 0)')), text = node.annotations, mode = "markers", type = 'scatter', hoverinfo = "text")
 	
@@ -672,7 +933,7 @@ plot.ACTIONet.interactive <- function(ACTIONet.out, sce, labels = NULL, top.arch
 	) 
 }
 
-plot.ACTIONet.interactive.3D <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP', marker.per.cell = 5, node.size = 2, CPal = "Spectral", show.legend = TRUE, annotate.cells = FALSE, opacity = 1.0, title = 'ACTIONet') {
+plot.ACTIONet.interactive.3D <- function(ACTIONet.out, sce, labels = NULL, top.arch.genes = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP|MALAT1|B2M', marker.per.cell = 5, node.size = 2, CPal = "Spectral", show.legend = TRUE, annotate.cells = TRUE, opacity = 1.0, title = 'ACTIONet') {
 	
 	require(plotly)
 	require(ACTIONet)
@@ -718,11 +979,45 @@ plot.ACTIONet.interactive.3D <- function(ACTIONet.out, sce, labels = NULL, top.a
 	# Adjust parameters
 	node.data$size = node.size
 
+
+	if(is.numeric(labels)) {
+		labels = as.character(labels)
+		labels = factor(labels, levels = sort(unique(labels)))
+		Annot = levels(labels)
+		
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}
+	else if(is.factor(labels)) {
+		Annot = levels(labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	} 
+	else {
+		labels = factor(labels, levels = sort(unique(labels)))
+		Annot = levels(labels)
+		if(is.list(CPal)) {
+			Pal = CPal[1:length(Annot)]
+		} else {
+			Pal = ggpubr::get_palette(CPal, length(Annot))
+		}
+		names(Pal) = Annot
+	}		
+	#vCol = Pal[labels]
+
 	
-	Pal = ggpubr::get_palette(CPal, length(levels(labels)))
-	names(Pal) = levels(labels)		
 	node.data$type = labels
-	network <- plot_ly(node.data, x = ~x3D, y = ~y3D, z = ~z3D, opacity = opacity, color = ~type, colors = Pal, marker = list(size = ~size, opacity = 1.0, alpha = 1, line = list(width = 0.1*node.size, alpha = 0.5, color = 'rgb(0, 0, 0)')), text = node.annotations, mode = "markers", hoverinfo = "text")
+	
+	
+	network <- plot_ly(node.data, x = ~x3D, y = ~y3D, z = ~z3D, opacity = opacity, color = ~type, colors = Pal, marker = list(size = ~size, opacity = 1.0, alpha = 1, line = list(width = 0.1*node.size, alpha = 0.5, color = 'rgb(0, 0, 0)')), text = node.annotations, mode = "markers", hoverinfo = "text", type = "scatter3d")
 	
 	axis <- list(title = "", showgrid = FALSE, showticklabels = FALSE, zeroline = FALSE)
 	p <- plotly::layout(
@@ -737,73 +1032,3 @@ plot.ACTIONet.interactive.3D <- function(ACTIONet.out, sce, labels = NULL, top.a
 	) 
 }
 
-## Function to draw Matrix
-plotHeatMat <- function(x, ...){
-  min <- min(x)
-  max <- max(x)
-  col.labels <- rownames(x)
-  row.labels <- colnames(x)
-  title <-c()
-  
-  # check for additional function arguments
-  if( length(list(...)) ){
-    Lst <- list(...)
-    if( !is.null(Lst$zlim) ){
-      min <- Lst$zlim[1]
-      max <- Lst$zlim[2]
-    }
-    if( !is.null(Lst$col.labels) ){
-      col.labels <- c(Lst$col.labels)
-    }
-    if( !is.null(Lst$row.labels) ){
-      row.labels <- c(Lst$row.labels)
-    }
-    if( !is.null(Lst$title) ){
-      title <- Lst$title
-    }
-  }
-  # # check for null values
-  # if( is.null(row.labels) ){
-  #    row.labels <- c(1:ncol(x))
-  # }
-  # if( is.null(col.labels) ){
-  #    col.labels <- c(1:nrow(x))
-  # }
-  
-  layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=c(4,1), heights=c(1,1))
-  
-  # Red and green range from 0 to 1 while Blue ranges from 1 to 0
-  ColorRamp <- rgb( seq(0,1,length=256),  # Red
-                    seq(0,1,length=256),  # Green
-                    seq(1,0,length=256))  # Blue
-  ColorLevels <- seq(min, max, length=length(ColorRamp))
-  
-  # Reverse Y axis
-  reverse <- nrow(x) : 1
-  col.labels <- col.labels[reverse]
-  x <- x[reverse,]
-  
-  # Data Map
-  par(mar = c(3,5,2.5,2))
-  image(1:dim(x)[1], 1:dim(x)[2], x, col=ColorRamp, xlab="", ylab="", axes=FALSE, zlim=c(min,max))
-  if( !is.null(title) ){
-    title(main=title)
-  }
-  if(!is.na(row.labels)) {
-    axis(BELOW<-1, at=1:length(row.labels), labels=row.labels, cex.axis=0.7)
-  }
-  if(!is.na(row.labels)) {
-    axis(LEFT <-2, at=1:length(col.labels), labels=col.labels, las= HORIZONTAL<-1, cex.axis=0.7)
-  }
-  
-  
-  # Color Scale
-  par(mar = c(3,2.5,2.5,2))
-  image(1, ColorLevels,
-        matrix(data=ColorLevels, ncol=length(ColorLevels),nrow=1),
-        col=ColorRamp,
-        xlab="",ylab="",
-        xaxt="n")
-  
-  layout(1)
-}

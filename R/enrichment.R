@@ -94,7 +94,7 @@ geneset.enrichment.gProfiler <- function(genes, top.terms = 10, col = "tomato", 
 	require(gProfileR)
 	require(ggpubr)
 
-	terms = gprofiler(genes, ordered_query = FALSE, hier_filtering = 'none', exclude_iea=FALSE, correction_method='fdr', src_filter = c('GO:BP'), organism = organism)
+	terms = gprofiler(genes, ordered_query = FALSE, hier_filtering = 'none', exclude_iea=FALSE, correction_method='fdr', src_filter = c('GO:REAC'), organism = organism)
 
 	terms$logPval = -log10(terms$p.value)
 
@@ -144,16 +144,16 @@ archetype.geneset.enrichment <- function(ACTIONet.out, genesets) {
 	
 	p_c = Matrix::colMeans(X)
 
-	Obs = as.matrix(t(X) %*% A)
-	Exp = as.matrix(p_c %*% t(Matrix::colSums(A)))
-	Nu = as.matrix(p_c %*% t(Matrix::colSums(A^2)))
+	Obs = as.matrix(Matrix::t(X) %*% A)
+	Exp = as.matrix(p_c %*% Matrix::t(Matrix::colSums(A)))
+	Nu = as.matrix(p_c %*% Matrix::t(Matrix::colSums(A^2)))
 
 	Lambda = Obs - Exp
 	
 	a = apply(A, 2, max)
 	ones = array(1, dim = dim(Lambda)[1])
 		
-	logPvals = Lambda^2 / (2*(Nu + (ones%*% t(a))*Lambda/3))
+	logPvals = Lambda^2 / (2*(Nu + (ones%*% Matrix::t(a))*Lambda/3))
 	
 	rownames(logPvals) = colnames(ind.mat)
 	colnames(logPvals) = colnames(signature.profile)

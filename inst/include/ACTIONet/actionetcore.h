@@ -112,20 +112,24 @@ namespace ACTIONetcore {
 		
 	mat MWM(mat &G);	
 	
-	vec extractArchetypeAssociatedSamples(sp_mat &G, vec h, double alpha = 0.85);
-	mat extractArchetypeAssociatedSamples(sp_mat &G, mat H_stacked, double alpha = 0.85);
+	vec extractArchetypeAssociatedSamples(sp_mat &G, vec h, double alpha);
+	mat extractArchetypeAssociatedSamples(sp_mat &G, mat H_stacked, double alpha);
 	mat batchPR(sp_mat &G, mat &U, double alpha, int thread_no, double tol);
+	mat batch_zoned_diffusion(sp_mat &G, uvec &zones, mat &U, double alpha, int thread_no, double tol);
 	
 	mat smoothArchetypes(mat archetype_profile, mat backbone, double alpha_val, double beta_val);	
 	sp_mat mergeArchetypes(mat C_stacked, mat H_stacked);
 	
 	vec sweepcut(sp_mat &A, vec s);
 
-	vec unsigned_cluster(sp_mat A, double resolution_parameter, int seed);
-	vec signed_cluster(sp_mat A, double resolution_parameter, int seed);
+	vec unsigned_cluster(sp_mat A, double resolution_parameter, int seed, uvec initial_clusters);
+	vec signed_cluster(sp_mat A, double resolution_parameter, int seed, uvec initial_clusters);
 
 	umat Rank1_matching(vec u, vec v, double u_threshold, double v_threshold);
-	
+
+
+	field<mat> FastGGM(mat x, double lambda, int thread_no);
+	arma::sp_mat make_spanner(arma::sp_mat &G_adj, int k);
 }
 
 

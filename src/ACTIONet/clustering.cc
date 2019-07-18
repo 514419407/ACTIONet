@@ -6,7 +6,7 @@
 #include <Optimiser.h>
 
 namespace ACTIONetcore {
-	vec signed_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
+	vec signed_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0, uvec initial_clusters = uvec()) {
 		int nV = A.n_rows;
 		int nE = A.n_nonzero;
 		
@@ -37,12 +37,24 @@ namespace ACTIONetcore {
 		Graph *G = new Graph(&g, edge_weights);
 		//printf("idx = %d, V = %d, E = %d, total_weight = %f, weighted = %d, directed = %d\n", idx, G->vcount(), G->ecount(), G->total_weight(), G->is_weighted(), G->is_directed());
 		
-
-		CPMVertexPartition* partition = new CPMVertexPartition(G, resolution_parameter);
+		CPMVertexPartition* partition;
+		if(initial_clusters.n_elem == nV) {
+			printf("\tInitializing partitions\n");
+			
+			vector<size_t> membership(nV);
+			for(int i = 0; i < nV; i++) {
+				membership[i] = initial_clusters(i);
+			}
+			partition = new CPMVertexPartition(G, membership, resolution_parameter);		
+		}
+		else {
+		 partition = new CPMVertexPartition(G, resolution_parameter);
+		}
 
 		Optimiser *opt = new Optimiser(seed);
 		opt->optimise_partition(partition);
 	
+		
 		for(int i = 0; i < nV; i++) {
 			clusters(i) = partition->membership(i)+1;
 		}
@@ -56,7 +68,7 @@ namespace ACTIONetcore {
 		return(clusters);
 	}
 	
-	vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
+	vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0, uvec initial_clusters = uvec()) {
 		int nV = A.n_rows;
 		int nE = A.n_nonzero;
 		
@@ -88,7 +100,21 @@ namespace ACTIONetcore {
 		//printf("idx = %d, V = %d, E = %d, total_weight = %f, weighted = %d, directed = %d\n", idx, G->vcount(), G->ecount(), G->total_weight(), G->is_weighted(), G->is_directed());
 		
 
-		RBConfigurationVertexPartition*partition = new RBConfigurationVertexPartition(G, resolution_parameter);
+		RBConfigurationVertexPartition* partition;
+		if(initial_clusters.n_elem == nV) {
+			printf("\tInitializing partitions\n");
+			
+			vector<size_t> membership(nV);
+			for(int i = 0; i < nV; i++) {
+				membership[i] = initial_clusters(i);
+			}
+			partition = new RBConfigurationVertexPartition(G, membership, resolution_parameter);		
+		}
+		else {
+		 partition = new RBConfigurationVertexPartition(G, resolution_parameter);
+		}
+
+
 
 		Optimiser *opt = new Optimiser(seed);
 		opt->optimise_partition(partition);

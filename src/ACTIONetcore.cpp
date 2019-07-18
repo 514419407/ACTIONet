@@ -264,6 +264,14 @@ mat batchPR(sp_mat &G, mat &U, double alpha = 0.85, int thread_no = 8, double to
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
+mat zoned_diffusion(sp_mat &G, uvec& zones, mat &U, double alpha = 0.85, int thread_no = 8, double tol = 1e-6) {	
+	mat U_smoothed = ACTIONetcore::batch_zoned_diffusion(G, zones, U, alpha, thread_no, tol);
+	
+    return U_smoothed;
+}
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
 vec sweepcut(sp_mat &A, vec s) {
     vec conductance = ACTIONetcore::sweepcut(A, s);
 
@@ -282,20 +290,40 @@ sp_mat mergeArchetypes(mat C_stacked, mat H_stacked) {
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-vec signed_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
+vec signed_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0, Nullable<IntegerVector> initial_clusters_ = R_NilValue) {
     set_seed(seed);
+
+	uvec initial_clusters_uvec(A.n_rows);
+	if ( initial_clusters_.isNotNull() ) {
+        NumericVector initial_clusters(initial_clusters_);
+		
+		for (int i = 0; i < A.n_rows; i++) initial_clusters_uvec(i) = initial_clusters(i);
+	} else {
+		for (int i = 0; i < A.n_rows; i++) initial_clusters_uvec(i) = i;
+	}
+
 	
-	vec clusters = ACTIONetcore::signed_cluster(A, resolution_parameter, seed);
+	vec clusters = ACTIONetcore::signed_cluster(A, resolution_parameter, seed, initial_clusters_uvec);
 
     return clusters;	
 }
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
-vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0) {
+vec unsigned_cluster(sp_mat A, double resolution_parameter = 1.0, int seed = 0, Nullable<IntegerVector> initial_clusters_ = R_NilValue) {
     set_seed(seed);
 
-	vec clusters = ACTIONetcore::unsigned_cluster(A, resolution_parameter, seed);
+
+	uvec initial_clusters_uvec(A.n_rows);
+	if ( initial_clusters_.isNotNull() ) {
+        NumericVector initial_clusters(initial_clusters_);
+		
+		for (int i = 0; i < A.n_rows; i++) initial_clusters_uvec(i) = initial_clusters(i);
+	} else {
+		for (int i = 0; i < A.n_rows; i++) initial_clusters_uvec(i) = i;
+	}
+
+	vec clusters = ACTIONetcore::unsigned_cluster(A, resolution_parameter, seed, initial_clusters_uvec);
 
     return clusters;	
 }
@@ -310,4 +338,40 @@ umat Rank1_matching(vec u, vec v, double u_threshold = 0, double v_threshold = 0
 	pairs = pairs + 1;
 	
 	return(pairs);
+}
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+List constructBackbone(mat arch_profile_reduced, double weight_threshold = 0, double pval_threshold = 0.05, double lambda = -1, int thread_no = 8) {
+	field<mat> results = ACTIONetcore::FastGGM(arch_profile_reduced, lambda, thread_no);		
+	
+	mat weights = results(0);
+	mat pvals = results(1);
+
+	mat backbone = weights;
+	uvec idx = find(weights < weight_threshold);
+	backbone(idx).zeros();
+	
+	idx = find(pvals > pval_threshold);
+	backbone(idx).zeros();
+
+
+	List out_list;		
+	
+	
+	out_list["backbone"] = backbone; 
+	out_list["weights"] = weights; 
+	out_list["pvals"] = pvals; 
+
+    return out_list;	
+}
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+sp_mat make_spanner(sp_mat &G, int k) {
+	sp_mat G_prime = ACTIONetcore::make_spanner(G, k);
+	
+	return(G_prime);	
 }
