@@ -64,10 +64,7 @@ alignDatasets <- function(ACTIONet.out.ds1, sce.ds1, ACTIONet.out.ds2, sce.ds2, 
 	S_r.ds1 = t(V.ds1) %*% profile.ds1_centered
 	S_r.ds2 = t(V.alignment) %*% profile.ds2_centered
 
-	# Compute similarities
-	pairwise.similarity = cor(S_r.ds1, S_r.ds2)
-
-	# Compute significance by simulating archetype profiles
+	# Compute significance by creating pseudo-archetypes
 	set.seed(0)
 
 	C1 = ACTIONet.out.ds1$reconstruct.out$C_stacked
@@ -78,6 +75,7 @@ alignDatasets <- function(ACTIONet.out.ds1, sce.ds1, ACTIONet.out.ds2, sce.ds2, 
 	  return(as.numeric(Matrix::sparseVector(i = ii, x = 1/length(c), length = nrow(C1))))
 	}), 'sparseMatrix')
 	profile1.rand = sce.ds1@assays[["logcounts"]] %*% C1.rand
+	S_r.ds1.rand = t(V.ds1) %*% scale(profile1.rand, scale = FALSE)
 
 
 	C2 = ACTIONet.out.ds2$reconstruct.out$C_stacked
@@ -87,26 +85,23 @@ alignDatasets <- function(ACTIONet.out.ds1, sce.ds1, ACTIONet.out.ds2, sce.ds2, 
 	  ii = sample(IC2, size = c)
 	  return(as.numeric(Matrix::sparseVector(i = ii, x = 1/length(c), length = nrow(C2))))
 	}), 'sparseMatrix')
-
-	
 	profile2.rand = sce.ds2@assays[["logcounts"]] %*% C2.rand
+	S_r.ds2.rand = t(V.alignment) %*% scale(profile2.rand, scale = FALSE)
 
-
-	S_r.ds1.rand = t(V.ds1) %*% scale(profile1.rand, scale = FALSE)
-	S_r.ds2.rand = t(V.alignment) %*% scale(profile.ds2_centered, scale = FALSE)
-
-	CC.rand = cor(S_r.ds1.rand, S_r.ds2.rand)
-
-	pairwise.similarity.z = (pairwise.similarity - median(CC.rand)) / mad(CC.rand)	
+	# Compute similarities
+	pairwise.similarity = cor(S_r.ds1, S_r.ds2)	
+	pairwise.similarity.rand = cor(S_r.ds1.rand, S_r.ds2.rand)
+	
+	pairwise.similarity.z = (pairwise.similarity - median(pairwise.similarity.rand)) / mad(pairwise.similarity.rand)	
 
 
 	A = cor(S_r.ds1)	
 	A.rand = cor(S_r.ds1.rand)
-	A.z = (A - median(A)) / mad(A)
+	A.z = (A - median(A.rand)) / mad(A.rand)
 
 	B = cor(S_r.ds2)	
 	B.rand = cor(S_r.ds2.rand)
-	B.z = (B - median(B)) / mad(B)
+	B.z = (B - median(B.rand)) / mad(B.rand)
 
 	
 	# Output list
