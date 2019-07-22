@@ -442,30 +442,76 @@ remove.cells <- function(ACTIONet.out, filtered.cells, force = FALSE) {
 	return(ACTIONet.out.pruned)
 }
 
+archCluster.ACTIONet <- function(ACTIONet.out, update = TRUE, thread_no = 8) {
+	#U = ACTIONet.out$reconstruct.out$C_stacked[, ACTIONet.out$core.out$core.archs]
+	U = t(ACTIONet.out$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])
+	U.smoothed = (batchPR(ACTIONet.out$build.out$ACTIONet, U, thread_no = thread_no))
+	#U.smoothed = apply(U.smoothed, 2, function(x) x / max(x))
+	
+	initial.clusters = apply(U.smoothed, 1, which.max)
+	
+	if(update) {
+		initial.clusters.updated = update.Labels(ACTIONet.out, initial.clusters)
+	} else {
+		initial.clusters.updated = initial.clusters
+	}
+	initial.clusters.updated = match(initial.clusters.updated, sort(unique(initial.clusters.updated)))
+	
+	return(initial.clusters.updated)
+}
 
-
-cluster.ACTIONet <- function(ACTIONet.out, resolution_parameter = 1.0, arch.init =TRUE, thread_no = 8) {
+cluster.ACTIONet <- function(ACTIONet.out, resolution_parameter = 1.0, arch.init = FALSE, update = FALSE, thread_no = 8) {
 	if(arch.init == TRUE) {
-		U = ACTIONet.out$reconstruct.out$C_stacked[, ACTIONet.out$core.out$core.archs]
-		U.smoothed = batchPR(ACTIONet.out$build.out$ACTIONet, U, thread_no = thread_no)
-		
-		initial.clusters = apply(U.smoothed, 1, which.max)
-		
-		initial.clusters.updated = cluster_label_prop(ACTIONet.out$ACTIONet, initial = initial.clusters)$membership
+		initial.clusters.updated = archCluster.ACTIONet(ACTIONet.out, update = TRUE)		
 		initial.clusters.updated = match(initial.clusters.updated, sort(unique(initial.clusters.updated))) - 1
 		
 		clusters = unsigned_cluster(ACTIONet.out$build.out$ACTIONet, resolution_parameter, 0, initial.clusters.updated)
 	} else {
 		clusters = unsigned_cluster(ACTIONet.out$build.out$ACTIONet, resolution_parameter, 0)
 	}
-	
+		
 	counts = table(clusters)
 	clusters[clusters %in% as.numeric(names(counts)[counts < 10])] = NA
 	clusters = as.numeric(infer.missing.Labels(ACTIONet.out, clusters))
 	
+	if(update == TRUE)
+		clusters = update.Labels(ACTIONet.out, clusters)
+	
 	clusters = factor(clusters, as.character(sort(unique(clusters))))
 
 	return(clusters)
+}
+
+annotateClusters <- function(clusters, Labels) {
+  if(!is.factor(Labels)) {
+    Labels = factor(Labels, levels = sort(unique(Labels)))
+  }
+  clusters = as.numeric(clusters)
+  
+  pop.size = length(Labels)
+  pos.size = table(Labels)
+  
+  logPvals = sapply(sort(unique(clusters)), function(i) {
+    idx = which(clusters == i)
+    sample.size = length(idx)
+    success.size = table(Labels[idx])
+    
+    logPval = HGT_tail(pop.size, pos.size, sample.size, success.size)
+  
+    return(logPval)
+  })
+  
+  clusterLabels = factor(levels(Labels)[apply(logPvals, 2, which.max)])
+  cellLabels = factor(clusterLabels[clusters], levels = levels(clusterLabels))
+  
+  fullLabels = sapply(sort(unique(clusters)), function(i) {
+	  return(sprintf('Cluster %d (%s)', i, clusterLabels[[i]]))
+  })
+  fullLabels = factor(fullLabels, levels = fullLabels)
+  
+  cellFullLabels = factor(fullLabels[clusters], levels = levels(fullLabels))
+  
+  return(list(Labels = clusterLabels, cellLabels = cellLabels, fullLabels = fullLabels, cellFullLabels = cellFullLabels, Enrichment = logPvals))
 }
 
 construct.sparse.backbone <- function(ACTIONet.out, reduction.slot = "S_r", stretch.factor = 10) {

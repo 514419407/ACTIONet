@@ -83,10 +83,12 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 		gg = matched.genes
 	}	
 	
-	#clusters = cluster.ACTIONet(ACTIONet.out)
-	#imputed.gene.expression = zoned_diffusion(ACTIONet.out$build.out$ACTIONet, clusters, U, alpha = 0.95)
-	
-	imputed.gene.expression = batchPR(G, U, alpha_val, thread_no)
+	if('clusters' %in% names(ACTIONet.out)) {
+		imputed.gene.expression = zoned_diffusion(ACTIONet.out$build.out$ACTIONet, clusters, U, alpha = alpha_val)
+		
+	} else {
+		imputed.gene.expression = batchPR(G, U, alpha_val, thread_no)
+	}
 	
 	imputed.gene.expression[is.na(imputed.gene.expression)] = 0
 	
@@ -109,7 +111,7 @@ impute.genes.using.ACTIONet <- function(ACTIONet.out, sce, genes, alpha_val = 0.
 			x = raw.gene.expression[, col]
 			y = imputed.gene.expression[, col]
 			
-			x.Q = max(x, 1)
+			x.Q = quantile(x, 1)
 			y.Q = quantile(y, 1)
 
 			if(y.Q == 0) {
@@ -161,127 +163,113 @@ impute.geneset.activity <- function(ACTIONet.out, sce, genes, alpha_val = 0.9, t
 }
 
 
-infer.missing.Labels <- function(ACTIONet.out, Labels) {	
-	require(igraph)
-	
+infer.missing.Labels <- function(ACTIONet.out, Labels, double.stochastic = FALSE) {	
 	if(is.igraph(ACTIONet.out))
 		ACTIONet = ACTIONet.out
 	else
 		ACTIONet = ACTIONet.out$ACTIONet
-		
-	G = as(get.adjacency(ACTIONet), 'dgTMatrix')
-	cs = Matrix::colSums(G)
-	cs[cs == 0] = 1
-	P = Matrix::sparseMatrix(i = G@i+1, j = G@j+1, x = G@x / cs[G@i+1], dims = dim(G))
+	
+	
+  if(!is.factor(Labels)) {
+    Labels = factor(Labels, levels = sort(unique(Labels)))
+  }
+  
+  A = as(get.adjacency(ACTIONet, attr = "weight"), 'dgTMatrix')
+  eps = 1e-16
+  rs = Matrix::rowSums(A)
+  P = sparseMatrix(i = A@i+1, j = A@j+1, x = A@x/rs[A@i+1], dims = dim(A))  
+  if(double.stochastic == TRUE) {
+    w = sqrt(Matrix::colSums(P)+eps)
+    W = P %*% Matrix::Diagonal(x = w, n = length(w))
+    P = W %*% Matrix::t(W)
+  } 
+  
+  
+  na.mask = is.na(Labels)
+  
+  if (sum(na.mask) > 0) {
+	counts = table(Labels)
+	p = counts/sum(counts)
+	X = sapply(names(p), function(celltype) {
+	x = as.numeric(Matrix::sparseVector(x = 1, i = which(Labels == celltype), length = length(Labels)))
+	})
 
-	
-	na.mask = is.na(Labels)
-	if(sum(na.mask) > 0) {
-		ct = sort(unique(Labels[!na.mask]))
-		
-		celltype.mask = sapply(ct, function(l) as.numeric(Labels == l))
-		colnames(celltype.mask) = ct
-		celltype.mask[is.na(celltype.mask)] = 0
-		
-		Neighbors.vote = as.matrix(P %*% celltype.mask)		
-		Neighbors.Labels = ct[apply(Neighbors.vote, 1, which.max)]
-		
-		Labels[na.mask] = Neighbors.Labels[na.mask]
-	}	
-	
-	return(Labels)
+	Exp = array(1, nrow(A)) %*% t(p)
+	Obs = P %*% X 
+
+	Lambda = Obs - Exp
+
+
+	w2 = Matrix::rowSums(P^2)
+	Nu = w2 %*% t(p)
+
+	a = as.numeric(qlcMatrix::rowMax(P)) %*% t(array(1, length(p)))
+
+
+	logPval = (Lambda^2) / (2 * (Nu + (a*Lambda)/3))
+	logPval[Lambda < 0] = 0
+	logPval[is.na(logPval)] = 0
+	updated.Labels = factor(levels(Labels)[apply(logPval, 1, which.max)], levels = levels(Labels))
+
+	Labels[na.mask] = updated.Labels[na.mask]
+  }
+  
+  return(Labels)  
 }
 
 
-prop.Labels <- function(ACTIONet.out, Labels, max_it = 3) {
-	require(Matrix)
-	require(igraph)
-	
-	G = as(get.adjacency(ACTIONet.out$ACTIONet, attr = "weight"), 'dgTMatrix')
-	cs = Matrix::colSums(G)
-	cs[cs == 0] = 1
-	P = Matrix::sparseMatrix(i = G@i+1, j = G@j+1, x = G@x / cs[G@i+1], dims = dim(G))
-
-	updated_labels = Labels
-	if(is.factor(updated_labels)) {
-		Ll = levels(updated_labels)
-	} else {
-		Ll = sort(unique(updated_labels))
-	}
-	
-	for(i in 1:max_it) {
-		celltype.mask = sapply(Ll, function(l) as.numeric(updated_labels == l))
-		X = celltype.mask
-#		cs = Matrix::colSums(celltype.mask)
-#		cs[cs == 0] = 1
-#		X = scale(celltype.mask, center = FALSE, scale = cs)
-
-
-		Neighbors.vote = as.matrix(P %*% X)		
-		Neighbors_labels = Ll[apply(Neighbors.vote, 1, which.max)]
-		idx = which(Neighbors_labels != updated_labels)
-		updated_labels[idx] = Neighbors_labels[idx]
-	}
-	
-	return(updated_labels)
-}
-
-update.Labels <- function(ACTIONet.out, Labels) {
-	set.seed(0)	
-	
+update.Labels <- function(ACTIONet.out, Labels, max.iter = 3, double.stochastic = FALSE) {	
 	if(is.igraph(ACTIONet.out))
 		ACTIONet = ACTIONet.out
 	else
 		ACTIONet = ACTIONet.out$ACTIONet
-
-	if(is.character(Labels))
-		Labels = factor(Labels, levels = sort(unique(Labels)))
-
-	require(igraph)
-	require(Matrix)
-
-	cl.out = cluster_label_prop(ACTIONet, initial = as.numeric(Labels))
-	clusters = cl.out$membership
-
-	updated.Labels = map.clusters(Labels, clusters)
-
-	while(sum(is.na(updated.Labels)) > 0)
-		updated.Labels = infer.missing.Labels(ACTIONet, updated.Labels)
-
-
-	updated.Labels = factor(updated.Labels, levels = levels(Labels))
-
-	return(updated.Labels)
 	
 	
-	# if(is.igraph(ACTIONet.out))
-	# 	ACTIONet = ACTIONet.out
-	# else
-	# 	ACTIONet = ACTIONet.out$ACTIONet
-	# 
-	# if(is.character(Labels)) {
-	# 	initial.clusters = match(Labels, sort(unique(Labels))) - 1
-	# } else if(is.factor(Labels)) {
-	# 	initial.clusters = as.numeric(Labels)-1
-	# } else if(is.numeric(Labels)) {
-	# 	initial.clusters = Labels - min(Labels)
-	# }
-	# 
-	# G = get.adjacency(ACTIONet, attr = "weight")
-	# clusters = unsigned_cluster(G, resolution_parameter, seed, initial.clusters)
-	# 
-	# updated.Labels = map.clusters(Labels, clusters)
-	# 
-	# while(sum(is.na(updated.Labels)) > 0)
-	# 	updated.Labels = infer.missing.Labels(ACTIONet, updated.Labels)
-	# 
-	# 
-	# updated.Labels = factor(updated.Labels, levels = levels(Labels))
-	# 
-	# return(updated.Labels) 
-	
-	
+  if(!is.factor(Labels)) {
+    Labels = factor(Labels, levels = sort(unique(Labels)))
+  }
+  
+  A = as(get.adjacency(ACTIONet, attr = "weight"), 'dgTMatrix')
+  eps = 1e-16
+  rs = Matrix::rowSums(A)
+  P = sparseMatrix(i = A@i+1, j = A@j+1, x = A@x/rs[A@i+1], dims = dim(A))  
+  if(double.stochastic == TRUE) {
+    w = sqrt(Matrix::colSums(P)+eps)
+    W = P %*% Matrix::Diagonal(x = w, n = length(w))
+    P = W %*% Matrix::t(W)
+  } 
+  
+
+	for(it in 1:max.iter) {
+		R.utils::printf("iter %d\n", it)
+		counts = table(Labels)
+		p = counts/sum(counts)
+		X = sapply(names(p), function(celltype) {
+			x = as.numeric(Matrix::sparseVector(x = 1, i = which(Labels == celltype), length = length(Labels)))
+		})
+
+		Exp = array(1, nrow(A)) %*% t(p)
+		Obs = P %*% X 
+
+		Lambda = Obs - Exp
+
+
+		w2 = Matrix::rowSums(P^2)
+		Nu = w2 %*% t(p)
+
+		a = as.numeric(qlcMatrix::rowMax(P)) %*% t(array(1, length(p)))
+
+
+		logPval = (Lambda^2) / (2 * (Nu + (a*Lambda)/3))
+		logPval[Lambda < 0] = 0
+		logPval[is.na(logPval)] = 0
+		Labels = factor(levels(Labels)[apply(logPval, 1, which.max)], levels = levels(Labels))
+	}
+  
+  return(Labels)  
 }
+
+
 
 annotate.archetype <- function(ACTIONet.out, Labels, rand_perm_no = 1000) {
 	require(ACTIONet)

@@ -74,6 +74,8 @@ namespace ACTIONetcore {
 		G.diag().zeros();
 		
 		uvec uz = unique(zones);					
+		printf("Zoned diffusion (%d zones)\n", uz.n_elem);
+		
 		uvec vertex_id(size(zones));	
 		for(int i = 0; i < uz.n_elem; i++) {
 			uvec idx = find(zones == uz(i));
@@ -105,10 +107,8 @@ namespace ACTIONetcore {
 			for(int k = 0; k < U.n_cols; k++) {
 				vec init_pr = U.col(k);
 				//double total_max = max(init_pr);
+				double weight = sum(init_pr(idx));				
 				
-				uvec indices = sort_index(init_pr);
-				int q_idx = indices[floor(init_pr.n_elem*0.95)];
-				double total_q = init_pr[q_idx];
 				
 				vec sub_init_pr = normalise(init_pr(idx), 1);
 				double* u = new double[sub_init_pr.size()];
@@ -120,18 +120,10 @@ namespace ACTIONetcore {
 				vec pr(res->x, res->num_vs);
 				pr.replace(datum::nan, 0);
 
-				vec sub_pr = init_pr(idx);
-				uvec sub_indices = sort_index(sub_pr);
-				int sub_q_idx = sub_indices[floor(sub_pr.n_elem*0.95)];
-				double sub_q = sub_pr[sub_q_idx];
-
-
-				double scale_factor = sub_q / total_q;
 				vec x = ZonedDiff.col(k);
-				x(idx) = scale_factor*pr / pr.n_elem;
+				x(idx) = weight*pr;
 				ZonedDiff.col(k) = x;
-			}
-			
+			}			
 		}
 
 		ZonedDiff = normalise(ZonedDiff, 1);

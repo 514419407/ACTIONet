@@ -143,7 +143,9 @@ plot.ACTIONet <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA,
 }
 
 
-plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA, size.attr = NA, cex = 2, trans.fact = 2.0, size.fact = 2.0, CPal = "d3", legend.pos = "bottomright") {
+plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.attr = NA, size.attr = NA, cex = 1.5, trans.fact = 1.0, size.fact = 1.0, CPal = "d3", legend.pos = "bottomright") {
+	border.width = 0.5*cex
+	
 	require(ggplot2)
 	require(ggpubr)
 	require(igraph)
@@ -154,7 +156,16 @@ plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.att
 		ACTIONet = ACTIONet.out$ACTIONet
 		
 	nV = length(V(ACTIONet))
-	coor = cbind(V(ACTIONet)$x, V(ACTIONet)$y)
+	#coor = cbind(V(ACTIONet)$x, V(ACTIONet)$y)
+
+
+	sketch.graph = ACTIONet
+	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
+
+	V(sketch.graph)$name = ''
+	V(sketch.graph)$shape = 'fcircle'
+	
+	
 
 	Annot = NA
 	if(is.numeric(color.attr)) {
@@ -188,83 +199,61 @@ plot.ACTIONet.igraph <- function(ACTIONet.out, color.attr = NA, transparency.att
 		}
 		names(Pal) = Annot
 	}		
-	if(length(Annot) > 1) {
+	if(length(Annot) > 0) {
 		vCol = Pal[color.attr]
 	} else {
 		vCol = V(ACTIONet)$color
 	}		
 
-	HSV = rgb2hsv(col2rgb(vCol))
-	HSV[3, ] = HSV[3, ]*0.9
-	vCol.border = vCol #apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
+
+	#HSV = rgb2hsv(col2rgb(vCol))
+	#HSV[3, ] = HSV[3, ]*0.85
+	#vCol.border = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
 	
 	if(is.numeric(transparency.attr)) {
+		#beta = 1 / (1 + exp(-trans.fact*(scale(transparency.attr)+1)))
 		z = (transparency.attr - median(transparency.attr)) / mad(transparency.attr)		
-		trans.factor = 1 / ( 1+ exp(-trans.fact*z) )
-		trans.factor = trans.factor ^ 2
+		beta = 1 / ( 1+ exp(-trans.fact*(z)) )
+		#beta = (transparency.attr - min(transparency.attr)) / (max(transparency.attr) - min(transparency.attr))
+		beta = beta ^ 2
+		
+		#plot(density(1-beta))
+		#vCol = colorspace::lighten(vCol, 1-beta, method = "relative", space = "HCL")
+		#vCol.border = colorspace::darken(vCol, 0.2*beta)#colorspace::lighten(vCol.border, 1-beta, method = "relative", space = "HLS")
 
-		#beta = 1 - (transparency.attr - min(transparency.attr)) / (max(transparency.attr) - min(transparency.attr))
+		vCol = scales::alpha(vCol, beta)		
+		#vCol.border = scales::alpha(vCol.border, beta)
 		
-		#vCol = colorspace::lighten(vCol, beta)
-
-		#HSV = rgb2hsv(col2rgb(vCol))
-		#HSV[3, ] = color.spa#((1-HSV[3, ]) *beta + HSV[3, ])
-		
-		#vCol = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
-
-		
-		
-		#RGB = apply(RGB, 2, function(x) (1-beta)*x + beta)
-		#print(dim(RGB))
-		#vCol = rgb(t(RGB))
-		
-				
-		#vCol = ggplot2::alpha(vCol, trans.factor)		
-		#vCol.border = ggplot2::alpha(vCol.border, trans.factor)
-		
-		
-		vCol = scales::alpha(vCol, trans.factor)		
-		vCol.border = scales::alpha(vCol.border, trans.factor)
-		
-		#RGB = col2rgb(vCol) / 255
-		#vCol = sapply(1:length(trans.factor), function(i) rgb(r = RGB[1, i], g = RGB[2, i], b = RGB[3, i], alpha = 1-trans.factor[i], maxColorValue = 1));
-		#print(vCol)
-
-
-		#RGB = col2rgb(vCol.border) / 255
-		#vCol.border = sapply(1:length(trans.factor), function(i) rgb(r = RGB[1, i], g = RGB[2, i], b = RGB[3, i], alpha = 1-trans.factor[i], maxColorValue = 1));
-		
-		#vCol = rgb(RGB, trans.factor, maxColorValue = 1)
-		
-	}
-
+		vCol.border = colorspace::darken(vCol, 0.5*beta)#colorspace::lighten(vCol.border, 1-beta, method = "relative", space = "HLS")
+	
+	} else {
+		vCol.border = colorspace::darken(vCol, 0.3)
+	}		
 
 
 
 	if(is.numeric(size.attr)) {
 		z = (size.attr - median(size.attr)) / mad(size.attr)		
-		size.factor = 1 / ( 1+ exp(-size.fact*z) )
-		size.factor = size.factor ^ 2
+		beta = 1 / ( 1+ exp(-size.fact*(z)) )
+		beta = beta ^ 2
+				
+		#z = (size.attr - median(size.attr)) / mad(size.attr)		
+		#size.factor = 1 / ( 1+ exp(-size.fact*z) )
+		#size.factor = size.factor ^ 2
 
-
-		cex = cex * size.factor
+		cex = cex * beta
 		 
 	}
 
-	sketch.graph = ACTIONet
-	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
 
-	V(sketch.graph)$name = ''
+	
 	V(sketch.graph)$size = cex
 	V(sketch.graph)$color = vCol
 	V(sketch.graph)$frame.color = vCol.border
+	V(sketch.graph)$frame.width = border.width
 	
 
-	if(is.numeric(transparency.attr)) {
-		perm = order(transparency.attr)
-		sketch.graph = permute.vertices(sketch.graph, perm)
-	}
-	
+
 	plot(sketch.graph)
 	if(length(Annot) > 1) 
 		legend(legend.pos, legend = Annot, fill=Pal, cex = 0.5)
@@ -342,73 +331,36 @@ plot.ACTIONet.3D <- function(ACTIONet.out, color.attr = NA, transparency.attr = 
 
 
 
-plot.ACTIONet.gradient <- function(ACTIONet.out, cell.scores, marker.genes, alpha_val = 0.9, node.size = 2, CPal = "magma", export_path = NA, thread_no = 8, prune = TRUE, title = "") {
-	require(igraph)
-	require(ACTIONet)
-	require(viridis)
-	require(ggpubr)
-	 	
-	coor = cbind(V(ACTIONet.out$ACTIONet)$x, V(ACTIONet.out$ACTIONet)$y)
-	
-
-	if(CPal %in% c("inferno", "magma", "viridis", "BlGrRd")) {
-		Pal_grad = switch(CPal, 
-		"inferno" = inferno(500, alpha = 0.8),
-		"magma" = magma(500, alpha = 0.8),
-		"viridis" = viridis(500, alpha = 0.8),
-		"BlGrRd" = colorRampPalette(c('blue', 'grey', 'red'))(500))
-		
-	} else {
-		lg = hsv(h = 0, s = 0, v = 0.99)		
-		Pal_grad = colorRampPalette(c(lg, CPal), bias = 100)(500)
-	}
-		
-	x = cell.scores
-	if(prune == TRUE) {
-		nnz = round(sum(abs(x)^2)^2 / sum(x^4))
-		x[order(x, decreasing = TRUE)[nnz+1:length(x)]] = 0
-	}
-	
-	if(sum(x) == 0)
-		return()
-	
-	nnz.mask = x > 0
-	
-	y = x[nnz.mask]
-	y = y - min(y)
-	s = y / max(y)
-
-
-	# Default color
-	vCol = rep(alpha(Pal_grad[[1]], 0.5), length(x))
-	#vCol[nnz.mask] = scales::col_bin(Pal_grad, domain = NULL, bins = 100)(s)
-	vCol[nnz.mask] = scales::col_numeric(Pal_grad, domain = NULL)(s)
-	
-	HSV = rgb2hsv(col2rgb(vCol))
-	HSV[3, ] = HSV[3, ]*0.5
-	vCol.border = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
-	
-	cex = rep(0.2, length(x))		
-	cex[nnz.mask] = node.size*s
-
-
-	plot(coor, pch=21, bg=vCol, col=vCol.border, cex=cex, axes=FALSE, xlab="", ylab="", main = title);
-}
-
-
-plot.ACTIONet.cell.state.map <- function(ACTIONet.out, sce, archetype.labels = NA, stretch.factor = 10, CPal = "d3", cex = 2, node.scale.factor = 3, reduction.slot = "S_r") {
+plot.ACTIONet.cell.state.map <- function(ACTIONet.out, sce, archetype.labels = NA, transparency.attr = NA, trans.fact = 1, stretch.factor = 10, CPal = "d3", cex = 2, node.scale.factor = 3, reduction.slot = "S_r") {
 	# Plot main ACTIONet first
 	sketch.graph = ACTIONet.out$ACTIONet
 	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
 	nV = length(V(sketch.graph))
 
-	V(sketch.graph)$color = 'lightgrey'
+
+	vCol = colorspace::lighten('black', 0.97)
+	vCol.border = colorspace::lighten('black', 0.9)
+	
+	if(is.numeric(transparency.attr)) {
+		z = (transparency.attr - median(transparency.attr)) / mad(transparency.attr)		
+		beta = 1 / ( 1+ exp(-trans.fact*(z)) )
+		beta = beta ^ 2
+
+		vCol = scales::alpha(vCol, beta)				
+		vCol.border = scales::alpha(vCol.border, beta)				
+	
+	}	
+	
+
+
+	V(sketch.graph)$color = vCol
+	V(sketch.graph)$frame.color = vCol.border
+	
+	
+	
+	
+	
 	V(sketch.graph)$size = cex
-
-
-	HSV = rgb2hsv(col2rgb(V(sketch.graph)$color))
-	HSV[3, ] = HSV[3, ]*0.8
-	V(sketch.graph)$frame.color = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
 
 	coor = cbind(V(sketch.graph)$x, V(sketch.graph)$y)
 
@@ -489,17 +441,46 @@ plot.ACTIONet.cell.state.map <- function(ACTIONet.out, sce, archetype.labels = N
 
 
 
-plot.ACTIONet.cell.state.view <- function(ACTIONet.out, archetype.labels = NA, CPal = "d3", cex = 2, node.scale.factor = 3) {
-	require(ggplot2)
-	require(ggpubr)
-	
+plot.ACTIONet.cell.state.view <- function(ACTIONet.out, archetype.labels = NA, transparency.attr = NA, trans.fact = 1, CPal = "d3", cex = 2, node.scale.factor = 3) {
+	# Plot main ACTIONet first
 	sketch.graph = ACTIONet.out$ACTIONet
 	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
+	nV = length(V(sketch.graph))
 
-	V(sketch.graph)$color = 'lightgrey'
-	V(sketch.graph)$size = cex
+
+	vCol = colorspace::lighten('black', 0.97)
+	vCol.border = colorspace::lighten('black', 0.9)
+	
+	if(is.numeric(transparency.attr)) {
+		z = (transparency.attr - median(transparency.attr)) / mad(transparency.attr)		
+		beta = 1 / ( 1+ exp(-trans.fact*(z)) )
+		beta = beta ^ 2
+
+		vCol = scales::alpha(vCol, beta)				
+		vCol.border = scales::alpha(vCol.border, beta)				
+	
+	}	
 	
 
+
+	V(sketch.graph)$color = vCol
+	V(sketch.graph)$frame.color = vCol.border
+	
+	
+	
+	
+	
+	V(sketch.graph)$size = cex
+
+	coor = cbind(V(sketch.graph)$x, V(sketch.graph)$y)
+
+	plot(sketch.graph, vertex.label=NA, layout=coor)
+	
+	
+	# Now overlay the core backbone connectome on top
+	core.index = ACTIONet.out$core.out$core.archs 
+	core.coor = ACTIONet.out$arch.vis.out$coordinates[core.index, ]	
+		
 	Annot = NA
 	if(is.numeric(archetype.labels)) {
 		archetype.labels = as.character(archetype.labels)
@@ -537,210 +518,28 @@ plot.ACTIONet.cell.state.view <- function(ACTIONet.out, archetype.labels = NA, C
 	} else {
 		vCol = ACTIONet.out$arch.vis.out$colors
 	}		
+		
+	core.col = vCol[core.index]
 
-	ss = as.numeric(table(ACTIONet.out$core.out$arch.membership))
-	ss = ss / max(ss)	
+	cs = as.numeric(table(ACTIONet.out$core.out$arch.membership))
+	core.scale.factor = cs / max(cs)
+	core.size = cex*(1 + node.scale.factor*core.scale.factor)
 
 
-	attr = list(color = vCol[ACTIONet.out$core.out$core.archs], x = ACTIONet.out$arch.vis.out$coordinates[ACTIONet.out$core.out$core.archs, 1], y = ACTIONet.out$arch.vis.out$coordinates[ACTIONet.out$core.out$core.archs, 2], size = rep(cex + node.scale.factor*cex*ss, length(ACTIONet.out$core.out$core.archs)))			  
-	sketch.graph = add.vertices(sketch.graph, nv = length(ACTIONet.out$core.out$core.archs), attr = attr)
+	backbone.graph = graph.empty(n = length(core.size), directed = FALSE)	
+	V(backbone.graph)$color = core.col
+	V(backbone.graph)$size = core.size
 
-	HSV = rgb2hsv(col2rgb(V(sketch.graph)$color))
+	HSV = rgb2hsv(col2rgb(V(backbone.graph)$color))
 	HSV[3, ] = HSV[3, ]*0.8
-	V(sketch.graph)$frame.color = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
+	V(backbone.graph)$frame.color = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
 
-	coor = cbind(V(sketch.graph)$x, V(sketch.graph)$y)
 
-	
-	plot(sketch.graph, vertex.label=NA, layout=coor)
-	
+	plot(backbone.graph, vertex.label=NA, layout=core.coor, add = T)
 	if(!is.na(archetype.labels)) {
 		legend('bottomright', legend = Annot, fill=Pal, cex = 0.5)
 	}
-	
-	## Add cell state graph on top
-# 	pcors = suppressWarnings(ppcor::pcor(t(ACTIONet.out$reconstruct.out$H_stacked[ACTIONet.out$core.out$core.archs, ])))	
-# 	CC = pcors$estimate
-# 	
-# 	CC[CC < min.cor] = 0
-# 	CC = CC - diag(diag(CC))
-# 	D = CC
-# 	D[CC > 0] = 1 - D[CC > 0]
-# 	core.graph.dist = graph_from_adjacency_matrix(D, mode = "undirected", weighted = TRUE)
-# 	
-# 	core.graph = mst(core.graph.dist, algorithm = "prim", weights = E(core.graph.dist)$weight)	
-# 	#core.graph = graph_from_adjacency_matrix(CC, mode = "undirected", weighted = TRUE)
-# 
-# 
-# 	V(core.graph)$color = ACTIONet.out$arch.vis.out$colors[ACTIONet.out$core.out$core.archs]
-# 
-# 	HSV = rgb2hsv(col2rgb(V(core.graph)$color))
-# 	HSV[3, ] = HSV[3, ]*0.7
-# 	V(core.graph)$frame.color = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
-# 	
-# 	V(core.graph)$size = 1.5*cex
-# 
-# 	E(core.graph)$color = ggplot2::alpha('black', 0.5)
-# 	E(core.graph)$width = 2
-# 
-#   C = ACTIONet.out$reconstruct.out$C_stacked
-#   arch.coors = t(sapply(1:dim(C)[2], function(col) {
-#     cm.coor = ACTIONet.out$arch.vis.out$coordinates[col, ]
-#     inf.cells = which(C[, col] > 0)
-#     if(length(inf.cells) == 0)
-#       return(c(0, 0))
-#     
-#     inf.cells.coor = ACTIONet.out$vis.out$coordinates[inf.cells, ]
-#     if(length(inf.cells) == 1)
-#       return(inf.cells.coor)
-#     
-#     delta = apply(inf.cells.coor, 1, function(x) sum(abs(x - cm.coor)))
-#     rep.cell.coor = inf.cells.coor[which.min(delta), ]
-#     
-#     return(rep.cell.coor)
-#   }))
-#   core.arch.coors = arch.coors[ACTIONet.out$core.out$core.archs, ]  
-# 
-# 	plot(core.graph, vertex.label=NA, layout=core.arch.coors, add=T)
-
 }
-
-
-visualize.markers <- function(ACTIONet.out, sce, marker.genes, node.size = 3, CPal = "d3", export_path = NA, thread_no = 8, prune = TRUE, scale.factor = 2) {
-	require(igraph)
-	require(ACTIONet)
-	require(viridis)
-	require(ggpubr)
-		
-	if(!sum(sapply(marker.genes, length) != 1) & is.null(names(marker.genes))) {
-		names(marker.genes) = marker.genes
-	}
-	 
-	gg = unique(unlist(marker.genes))
-	all.marker.genes = sort(intersect(gg, rownames(sce)))
-
-
-	
-	perc = 100*Matrix::rowSums(sce@assays[["logcounts"]][match(all.marker.genes, rownames(sce)), ] > 0) / dim(sce)[2]
-	
-	rare.genes = all.marker.genes[perc < 5]
-	abundant.genes = setdiff(all.marker.genes, rare.genes)
-
-	if(length(rare.genes) > 0) {
-		imputed.marker.expression.shallow = impute.genes.using.ACTIONet(ACTIONet.out, sce, rare.genes, 0.85, thread_no, prune = FALSE)
-		if(length(abundant.genes) > 0) {
-			imputed.marker.expression.deep = impute.genes.using.ACTIONet(ACTIONet.out, sce, abundant.genes, 0.95, thread_no, prune = FALSE)
-
-			imputed.marker.expression = cbind(imputed.marker.expression.shallow, imputed.marker.expression.deep)
-		} else {
-			imputed.marker.expression = imputed.marker.expression.shallow
-		}
-	} else if(length(abundant.genes) > 0) {
-		imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, abundant.genes, 0.95, thread_no, prune = FALSE)
-	}
-
-
-	#imputed.marker.expression = t(ACTIONet.out$signature.profile[all.marker.genes, ACTIONet.out$core.out$core.archs] %*% ACTIONet.out$core.out$H)
-	
-	#imputed.marker.expression  = t(sce@assays[["logcounts"]][match(all.marker.genes, rownames(sce)), ])
-	#colnames(imputed.marker.expression) = all.marker.genes
-		
-	coor = cbind(V(ACTIONet.out$ACTIONet)$x, V(ACTIONet.out$ACTIONet)$y)
-
-
-	if(!(CPal %in% c("inferno", "magma", "viridis", "BlGrRd"))) {
-		lg = alpha(hsv(h = 0, s = 0, v = 0.99), 0.8)
-		if(is.list(CPal)) {
-			Pal = CPal[1:length(names(marker.genes))]
-		} else {
-			Pal = ggpubr::get_palette(CPal, length(names(marker.genes)))
-		}
-		names(Pal) = names(marker.genes)
-	}
-	
-	lapply(all.marker.genes, function(gene) {
-		print(gene)
-		if(! (gene %in% colnames(imputed.marker.expression)) )
-			return()
-			
-		idx = which(sapply(marker.genes, function(gs) gene %in% gs))[1]
-		celltype.name = names(marker.genes)[idx]
-
-		if(CPal %in% c("inferno", "magma", "viridis", "BlGrRd")) {
-			Pal_grad = switch(CPal, 
-			"inferno" = inferno(100, alpha = 0.8),
-			"magma" = magma(100, alpha = 0.8),
-			"viridis" = viridis(100, alpha = 0.8),
-			"RdYlBu" = grDevices::colorRampPalette(RColorBrewer::brewer.pal(n = 9, name = "RdYlBu"))(100))
-		} else {
-			Pal_grad = colorRampPalette(c("white", Pal[[celltype.name]]))(100)
-		}
-		
-		x = imputed.marker.expression[, gene]
-		x[x < 0] = 0
-		x = (x - min(x)) / (max(x) - min(x))
-		
-		if(gene %in% rare.genes) {
-			nnz = round(sum(abs(x)^2)^2 / sum(x^4))
-		} else {
-			nnz = round(sum(abs(x))^2 / sum(x^2))
-		}
-		
-		#z = (x - median(x)) / #scale(x) 
-		#nnz = sum(z > 1.65)
-		threshold = x[order(x, decreasing = TRUE)[nnz]]
-		
-		x = x - threshold
-		x = x / sd(x)
-		s = 1 / (1 + exp(-scale.factor*x))
-		
-		#plot(density(s))
-		#if(prune == TRUE)
-		#	x[order(x, decreasing = TRUE)[nnz+1:length(x)]] = 0
-		
-		#if(sum(x) == 0)
-			#return()
-		
-		#nnz.mask = x > 0
-		
-		#y = x[nnz.mask]
-		#s = y / max(y)
-		#s = y / quantile(y, 0.9)
-		#s[s > 1] = 1
-		
-		#s = 1 / (1 + exp(-scale.factor*scale(s)))
-		#s = exp(scale.factor * s)
-		#s = s / quantile(s, 0.9)
-		#s[s > 1] = 1
-
-		# Default color
-		#vCol = rep(alpha(Pal_grad[[1]], 0.5), length(s))
-		#vCol[nnz.mask] = scales::col_bin(Pal_grad, domain = NULL, bins = 100)(s)
-		#vCol[nnz.mask] = scales::col_numeric(Pal_grad, domain = NULL)(s)
-		#vCol[nnz.mask] = Pal_grad[round(s*length(Pal_grad))]
-		vCol = scales::col_bin(Pal_grad, domain = NULL, bins = 100)(s)
-		
-		HSV = rgb2hsv(col2rgb(vCol))
-		HSV[3, ] = HSV[3, ]*0.9
-		vCol.border = apply(HSV, 2, function(v) do.call(hsv, as.list(v)))
-		
-		cex = (s+0.1)*node.size
-		#cex = rep(0.1*node.size, length(x))		
-		#cex[nnz.mask] = node.size*s
-
-
-		plot(coor, pch=21, bg=vCol, col=vCol.border, cex=cex, axes=FALSE, xlab="", ylab="", main = gene);
-
-
-		if(!is.na(export_path)) {
-			fname = sprintf('%s/%s.pdf', export_path, ifelse(celltype.name == gene, gene, sprintf('%s_%s', celltype.name, gene)));
-			pdf(fname)
-			plot(coor, pch=21, bg=vCol, col=vCol.border, cex=cex, axes=FALSE, xlab="", ylab="", main = gene);
-			dev.off()
-		}
-	});
-}
-
 
 plot.ACTIONet.gene.view <- function(ACTIONet.out, sce, top.gene.count = 10, blacklist.pattern = '\\.|^RPL|^RPS|^MRP|^MT-|^MT|^RP|MALAT1|B2M') {
 	signature.profile = ACTIONet.out$signature.profile[, ACTIONet.out$core.out$core.archs]
@@ -1032,3 +831,268 @@ plot.ACTIONet.interactive.3D <- function(ACTIONet.out, sce, labels = NULL, top.a
 	) 
 }
 
+
+plot.marker.boxplot <- function(ACTIONet.out, sce, marker.genes, Labels, node.size = 3, CPal = "d3", export_path = NA, thread_no = 8, prune = FALSE, scale.factor = 2) {
+	require(igraph)
+	require(ACTIONet)
+	require(ggpubr)
+	
+	if(!is.factor(Labels)) {
+		Labels = factor(Labels, levels = sort(unique(Labels)))
+	}
+		
+	if(!sum(sapply(marker.genes, length) != 1) & is.null(names(marker.genes))) {
+		names(marker.genes) = marker.genes
+	}
+	 
+	gg = unique(unlist(marker.genes))
+	all.marker.genes = sort(intersect(gg, rownames(sce)))
+
+	imputed.markers = impute.genes.using.ACTIONet(ACTIONet.out, sce, all.marker.genes, prune = prune)
+
+	imputed.markers.df = as.data.frame(imputed.markers * nrow(imputed.markers))
+	imputed.markers.df$Celltype = Labels
+	
+	
+	if(is.list(CPal)) {
+		Pal = CPal[1:length(levels(Labels))]
+	} else {
+		Pal = ggpubr::get_palette(CPal, length(levels(Labels)))
+	}
+	names(Pal) = levels(Labels)
+
+	sapply(colnames(imputed.markers), function(gene.name) {
+		gp = ggboxplot(imputed.markers.df, x = "Celltype", y = gene.name, fill = "Celltype", palette = Pal) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+		print(gp)
+				
+		if(!is.na(export_path)) {
+			fname = sprintf('%s/%s.pdf', export_path, gene.name);
+			pdf(fname)
+			print(gp)			
+			dev.off()
+		}		
+		
+	})
+
+}
+
+
+plot.marker.dotplot <- function(ACTIONet.out, sce, marker.genes, Labels, CPal = "YlOrRd", thread_no = 8, prune = FALSE) {
+	require(ACTIONet)
+	library(corrplot)
+	library(seriation)
+	
+	if(!is.factor(Labels)) {
+		Labels = factor(Labels, levels = sort(unique(Labels)))
+	}
+		
+	if(!sum(sapply(marker.genes, length) != 1) & is.null(names(marker.genes))) {
+		names(marker.genes) = marker.genes
+	}
+	 
+	gg = unique(unlist(marker.genes))
+	all.marker.genes = sort(intersect(gg, rownames(sce)))
+
+	imputed.markers = impute.genes.using.ACTIONet(ACTIONet.out, sce, all.marker.genes, prune = prune)
+
+
+	X = apply(imputed.markers, 2, function(x) return( (x - min(x)) / (max(x) - min(x))))
+
+	IDX = split(1:nrow(imputed.markers), Labels)
+	mean.expr = sapply(IDX, function(idx) as.numeric(Matrix::colMeans(X[idx, ])))
+	rownames(mean.expr) = colnames(imputed.markers)
+
+	set.seed(0)
+	perm = seriation::get_order(seriate(mean.expr, "BEA_TSP"))
+
+
+	Pal = ggpubr::get_palette(CPal, 11)
+
+	corrplot(mean.expr[perm,], is.corr = FALSE, method = "circle", tl.col="black", cl.pos="n", col = Pal)
+}
+
+plot.ACTIONet.gradient <- function(ACTIONet.out, x, max.update.iter = 3, CPal = "tomato", node.size = 3) {
+
+	ACTIONet = ACTIONet.out$ACTIONet
+
+
+	sketch.graph = ACTIONet
+	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
+
+	V(sketch.graph)$name = ''
+	V(sketch.graph)$shape = 'fcircle'
+
+
+	eps = 1e-16
+	A = as(get.adjacency(ACTIONet, attr = "weight"), 'dgTMatrix')
+	rs = Matrix::rowSums(A)
+	P = sparseMatrix(i = A@i+1, j = A@j+1, x = A@x/rs[A@i+1], dims = dim(A))  
+
+
+	# Normalize between [0, 1]
+	x = (x - min(x)) / (max(x) - min(x))
+
+	# Find effective # of nonzeros using participation ratio
+	nnz = round(sum(abs(x))^2 / sum(x^2))
+	l = array(0, length(x))
+	l[order(x, decreasing = TRUE)[1:nnz]] = 1
+
+	# Use label propagation to smooth nonzero estimates
+	for(it in 1:max.update.iter) {
+		p = mean(l)
+
+		X = sapply(unique(l), function(i) {
+			x = as.numeric(Matrix::sparseVector(x = 1, i = which(l == i), length = length(l)))
+		})
+
+
+		Exp = array(1, nrow(A)) %*% t(p)
+		Obs = P %*% X 
+
+		Lambda = Obs - Exp
+
+
+		w2 = Matrix::rowSums(P^2)
+		Nu = w2 %*% t(p)
+
+		a = as.numeric(qlcMatrix::rowMax(P)) %*% t(array(1, length(p)))
+
+
+		logPval = (Lambda^2) / (2 * (Nu + (a*Lambda)/3))
+		logPval[Lambda < 0] = 0
+		logPval[is.na(logPval)] = 0
+		l = apply(logPval, 1, which.max)-1
+	}
+
+
+	V(sketch.graph)$color = rgb(0.95, 0.95, 0.95)
+	V(sketch.graph)$frame.color = rgb(0.9, 0.9, 0.9)
+
+
+	if(CPal %in% c("inferno", "magma", "viridis", "BlGrRd")) {
+		Pal_grad = switch(CPal, 
+		"inferno" = inferno(500, alpha = 0.8),
+		"magma" = magma(500, alpha = 0.8),
+		"viridis" = viridis(500, alpha = 0.8),
+		"BlGrRd" = colorRampPalette(c('blue', 'grey', 'red'))(500))
+		
+	} else {
+		lg = rgb(0.95, 0.95, 0.95)
+		Pal_grad = colorRampPalette(c(lg, CPal))(500)
+	}
+
+	V(sketch.graph)$color[l == 1] = darken(scales::col_numeric(Pal_grad, domain = NULL)(scale(x[l == 1])), 0.25)
+	V(sketch.graph)$frame.color[l == 1] = darken(V(sketch.graph)$color[l == 1], 0.2)
+
+
+	V(sketch.graph)$size = node.size
+	V(sketch.graph)$frame.width = node.size*0.1
+
+	plot(sketch.graph)
+}
+
+visualize.markers <- function(ACTIONet.out, sce, marker.genes, max.update.iter = 3, CPal = "d3", node.size = 3, adjust.node.size = TRUE, alpha_val = 0.85, export_path = NA) {
+	if(!sum(sapply(marker.genes, length) != 1) & is.null(names(marker.genes))) {
+		names(marker.genes) = marker.genes
+	}
+	Pal = ggpubr::get_palette(CPal, length(names(marker.genes)))
+	names(Pal) = names(marker.genes)
+	
+	gg = unique(unlist(marker.genes))
+	all.marker.genes = sort(intersect(gg, rownames(sce)))
+	
+	imputed.marker.expression = impute.genes.using.ACTIONet(ACTIONet.out, sce, all.marker.genes, prune = prune, alpha_val = alpha_val)
+
+
+	ACTIONet = ACTIONet.out$ACTIONet
+	sketch.graph = ACTIONet
+	sketch.graph = delete.edges(sketch.graph, E(sketch.graph))
+
+	V(sketch.graph)$name = ''
+	V(sketch.graph)$shape = 'fcircle'
+
+
+	eps = 1e-16
+	A = as(get.adjacency(ACTIONet, attr = "weight"), 'dgTMatrix')
+	rs = Matrix::rowSums(A)
+	P = sparseMatrix(i = A@i+1, j = A@j+1, x = A@x/rs[A@i+1], dims = dim(A))  
+
+	gradPal = grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "RdYlBu")))(100)
+	
+	lapply(all.marker.genes, function(gene) {
+		print(gene)
+		if(! (gene %in% colnames(imputed.marker.expression)) )
+			return()
+			
+		idx = which(sapply(marker.genes, function(gs) gene %in% gs))[1]
+		celltype.name = names(marker.genes)[idx]
+		
+		x = imputed.marker.expression[, gene]
+
+
+		# Normalize between [0, 1]
+		x = (x - min(x)) / (max(x) - min(x))
+
+		# Find effective # of nonzeros using participation ratio
+		nnz = round(sum(abs(x^2))^2 / sum(x^4))
+		l = array(0, length(x))
+		l[order(x, decreasing = TRUE)[1:nnz]] = 1
+
+		# Use label propagation to smooth nonzero estimates
+		if(max.update.iter > 0) {
+			for(it in 1:max.update.iter) {			
+				p = mean(l)
+
+				X = sapply(0:1, function(i) {
+					x = as.numeric(Matrix::sparseVector(x = 1, i = which(l == i), length = length(l)))
+				})
+
+
+				Exp = array(1, nrow(A)) %*% t(p)
+				Obs = P %*% X 
+
+				Lambda = Obs - Exp
+
+
+				w2 = Matrix::rowSums(P^2)
+				Nu = w2 %*% t(p)
+
+				a = as.numeric(qlcMatrix::rowMax(P)) %*% t(array(1, length(p)))
+
+
+				logPval = (Lambda^2) / (2 * (Nu + (a*Lambda)/3))
+				logPval[Lambda <= 0] = 0
+				logPval[is.na(logPval)] = 0
+				l = apply(logPval, 1, which.max)-1
+			}
+		}
+
+		V(sketch.graph)$color = rgb(0.95, 0.95, 0.95)
+		V(sketch.graph)$frame.color = rgb(0.9, 0.9, 0.9)
+
+		lg = rgb(0.95, 0.95, 0.95)
+		Pal_grad = colorRampPalette(c(lg, Pal[[celltype.name]]))(500)
+
+
+		V(sketch.graph)$color[l == 1] = darken(scales::col_numeric(Pal_grad, domain = NULL)(scale(x[l == 1])), 0.35)
+		V(sketch.graph)$frame.color[l == 1] = darken(V(sketch.graph)$color[l == 1], 0.35)
+
+
+		if(adjust.node.size == TRUE)
+			V(sketch.graph)$size = 3*node.size*x
+		else
+			V(sketch.graph)$size = node.size
+					
+		V(sketch.graph)$frame.width = node.size*0.1
+
+		plot(sketch.graph, main = gene)
+		
+		
+		if(!is.na(export_path)) {
+			fname = sprintf('%s/%s.pdf', export_path, ifelse(celltype.name == gene, gene, sprintf('%s_%s', celltype.name, gene)));
+			pdf(fname)
+			plot(sketch.graph, main = gene)
+			dev.off()
+		}		
+	})
+}
