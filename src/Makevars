@@ -1,3 +1,4 @@
+CXX_STD = CXX11
 SOURCES=$(wildcard ACTION/*.cc)
 SOURCES+=$(wildcard ACTIONet/*.cc)
 SOURCES+=$(wildcard leiden/*.cc)
