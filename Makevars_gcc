@@ -1,2 +1,2 @@
-CXXFLAGS=-std=c++14 -lstdc++ -w -m64 -fPIC -march=native -O4 -DUSE_BLAS_LIB -DAXPBY -DINT_64BITS
+CXXFLAGS=-std=c++11 -O3 -lstdc++ -w -m64 -fPIC -march=native -O4 -DUSE_BLAS_LIB -DAXPBY -DINT_64BITS
 CXX=g++-9
